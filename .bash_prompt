@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+# Stores the initial user.
+DF_INITIAL_USER=$USER
+
+# Records `$?` (in case someone runs another command).
+DF_EXIT_STATUS=0
+
+# Indicates if we're waiting for the user's very first command.
+DF_IS_FIRST=1
+
+# Records the user's previous working directory.
+DF_PREV_WD=$HOME
+
+# Stores the location of the user's complete annotated history.
+DF_HISTORY_DIR=$HOME/.complete_annotated_bash_history
+
+
+if [ -f $(brew --prefix)/etc/bash_completion ]; then
+    source $(brew --prefix)/etc/bash_completion
+fi
+
+
+if [ -f ~/.git-prompt.sh ]; then
+    source ~/.git-prompt.sh
+fi
+
+
+df_abbreviate_dir() {
+    if [ $1 = /Users/$DF_INITIAL_USER ]; then
+        echo '~'
+    elif [[ $1 = /Users/$DF_INITIAL_USER* ]]; then
+        echo "~${1:${#DF_INITIAL_USER} + 7}"
+    else
+        echo $1
+    fi
+}
+
+df_abbreviate_user() {
+    if [ $1 = $DF_INITIAL_USER ]; then
+        echo 'self'
+    else
+        echo $USER
+    fi
+}
+
+df_todays_history_file() {
+    # Create a separate file for each day.
+    echo $DF_HISTORY_DIR/bash_history-`date +%Y%m%d`
+}
+
+df_record_history() {
+    # Immediately append to the history file.
+    history -a
+
+    # Based on PROMPT_COMMAND by Michael Barrett:
+    # http://signal0.com/2012/07/19/keeping_bash_history_forever.html
+
+    [ -d $DF_HISTORY_DIR ] || mkdir -p $DF_HISTORY_DIR
+
+    # Let's separate entries by a newline. I find it easier on the old eyes.
+    echo >> `df_todays_history_file`
+
+    # Write the shell's process id, the command's exit code, the current user,
+    # and the previous working directory.
+    echo "#pid=$$" \
+        exit=$DF_EXIT_STATUS \
+        user=`df_abbreviate_user $USER` \
+        pwd=`df_abbreviate_dir $DF_PREV_WD`\
+        >> `df_todays_history_file`
+
+    # Write the day and time between ":" and ";" so that bash ignores them.
+    # (This way you can copy and paste the line into the shell.) Also, add two
+    # spaces between the time and the command. Seems a bit easier on the eyes.
+    echo :`date +"%a %I:%M %p"`\;\ \
+        `history 1 | sed -E 's/^[[:space:]]+[0-9]*[[:space:]]+//g'`\
+        >> `df_todays_history_file`
+
+    # Record the working directory so that we can use it in the next entry.
+    DF_PREV_WD=$PWD
+}
+
+df_print_status() {
+    local red='\e[0;31m'
+    local yellow='\e[0;33m'
+    local green='\e[32m'
+    local cyan='\e[0;36m'
+    local purple='\e[0;35m'
+    local gray='\e[90m'
+
+    if [ "$DF_EXIT_STATUS" -eq 0 ]; then
+        local usercolor=$green
+        local dircolor=$cyan
+        local branchcolor=$yellow
+    else
+        local usercolor='\e[1;31m'
+        local dircolor=$red
+        local branchcolor=$purple
+    fi
+
+    printf "\n$usercolor%s:$dircolor %s$branchcolor$(__git_ps1 " [%s]")\n$gray" \
+        `df_abbreviate_user $USER` \
+        `df_abbreviate_dir $PWD`
+}
+
+df_record_history_and_print_status() {
+    # Define a global variable for "$?" so that both functions can use it.
+    DF_EXIT_STATUS="$?"
+
+    # Don't record the annotated history when the shell first starts.
+    if [ $DF_IS_FIRST -ne 0 ]; then
+        DF_IS_FIRST=0
+    else
+        df_record_history
+    fi
+    df_print_status
+}
+
+
+PROMPT_COMMAND=df_record_history_and_print_status
+PS1='\@> \[\e[0m\]'
