@@ -14,6 +14,7 @@ brew install scala
 brew install sbt
 brew install wget
 brew install ack
+brew install icdiff
 
 # Remove outdated versions from the cellar.
 brew cleanup
