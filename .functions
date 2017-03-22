@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
 # A handy function for searching the complete annotated history.
-# http://signal0.com/2012/07/19/keeping_bash_history_forever.html
 hsearch() {
-    # Ignore lines that start with "#pid=".
-    grep --no-filename "$@" $DF_HISTORY_DIR/* | grep -v "#pid="
+    # Ignore lines that start with "#pid=". Also, color the timestamps gray.
+    # (Use "\x5c" to print the slash character before the "1".)
+    grep --no-filename "$@" $DF_HISTORY_DIR/* \
+        | grep -v "#pid=" \
+        | sed "s/^\(:[^;]*;\)/`printf "\e[90m\x5c1\e[0m"`"/
 }
 
 
