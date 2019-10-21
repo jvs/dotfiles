@@ -8,9 +8,3 @@ hsearch() {
         | grep -v "#pid=" \
         | sed "s/^\(:[^;]*;\)/`printf "\e[90m\x5c1\e[0m"`"/
 }
-
-
-# Call "load_nvm" before using nvm. (No need to do this for every shell.)
-load_nvm() {
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-}

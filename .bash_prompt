@@ -72,8 +72,8 @@ df_record_history() {
     # Write the day and time between ":" and ";" so that bash ignores them.
     # (This way you can copy and paste the line into the shell.) Also, add two
     # spaces between the time and the command. Seems a bit easier on the eyes.
-    echo :`date +"%a %I:%M %p"`\;\ \
-        `history 1 | sed -E 's/^[[:space:]]+[0-9]*[[:space:]]+//g'`\
+    echo :`date +"%a %b %d %I:%M %p (%Y)"`\;\ \
+        `history 1 | sed -E 's/^([0-9]*)[[:space:]]+/\1  /g'` \
         >> `df_todays_history_file`
 
     # Record the working directory so that we can use it in the next entry.
@@ -98,8 +98,8 @@ df_print_status() {
         local branchcolor=$purple
     fi
 
-    printf "\n$usercolor%s:$dircolor %s$branchcolor$(__git_ps1 " [%s]")\n$gray" \
-        `df_abbreviate_user $USER` \
+    printf "\n$usercolor%s %s$dircolor %s$branchcolor$(__git_ps1 " [%s]")\n$gray" \
+        `echo -n $(date +"%I:%M %p")` \
         `df_abbreviate_dir $PWD`
 }
 
@@ -118,4 +118,4 @@ df_record_history_and_print_status() {
 
 
 PROMPT_COMMAND=df_record_history_and_print_status
-PS1='\@> \[\e[0m\]'
+PS1='`df_abbreviate_user $USER`> \[\e[0m\]'

@@ -1,6 +1,11 @@
 [user]
     useConfigOnly = true
 
+[color]
+    ui = true
+
+
+# == dotfiles repo ==
 # icdiff configuration from:
 # http://owen.cymru/github-style-diff-in-terminal-with-icdiff/
 
