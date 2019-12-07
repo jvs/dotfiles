@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-cat >~/.bashrc <<EOL
+wget -O ~/jvs-bashrc.sh \
+    https://raw.githubusercontent.com/jvs/dotfiles/ubuntu/jvs-bashrc.sh
+
+cat >>~/.bashrc <<EOL
 
 # Source jvs-bashrc.sh if it exists.
 if [ -f "$HOME/jvs-bashrc.sh" ]; then
@@ -20,3 +23,4 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 sudo apt install yarn
 
 sudo snap install code --classic
+sudo apt autoremove
