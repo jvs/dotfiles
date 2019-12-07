@@ -23,4 +23,5 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 sudo apt install yarn
 
 sudo snap install code --classic
+sudo snap install 1password-linux
 sudo apt autoremove
