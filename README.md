@@ -1,6 +1,12 @@
 # dotfiles
 A simple dotfiles repo.
 
+## Setup
 
-## Acknowledgments
-Largely based on Mathias Bynens' [dotfiles repository](https://github.com/mathiasbynens/dotfiles).
+```bash
+$ wget -O ~/setup-jvs-bashrc.sh \
+    https://raw.githubusercontent.com/jvs/dotfiles/ubuntu/setup-jvs-bashrc.sh
+$ chmod +x ~/setup-jvs-bashrc.sh
+$ ~/setup-jvs-bashrc.sh
+$ rm ~/setup-jvs-bashrc.sh
+```

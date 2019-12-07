@@ -1,33 +1,11 @@
 [user]
     useConfigOnly = true
+	name = jvs
+	email = vonseg@protonmail.com
 
 [color]
     ui = true
-
-
-# == dotfiles repo ==
-# icdiff configuration from:
-# http://owen.cymru/github-style-diff-in-terminal-with-icdiff/
-
-[alias]
-    showtool = "!f() { git difftool $1^ $1; }; f"
-    added = difftool --cached
-
-    # Use "git dif" (with one f) to view changes with icdiff.
-    dif = icdiff
-
-[diff]
-    # Detect copies as well as renames
-    renames = copies
-
-    # Set icdiff as the diff tool.
-    tool = icdiff
-
-[difftool]
-    prompt = false
-
-[difftool "icdiff"]
-    cmd = /usr/local/bin/icdiff --line-numbers $LOCAL $REMOTE
-
-[pager]
-    difftool = true
+[credential]
+	helper = cache --timeout=64800
+[core]
+	editor = code --wait
