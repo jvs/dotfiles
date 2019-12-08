@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 
-wget -O ~/jvs-bashrc.sh \
-    https://raw.githubusercontent.com/jvs/dotfiles/ubuntu/jvs-bashrc.sh
+if [ ! -f ~/git-prompt.sh ]; then
+    wget -O ~/git-prompt.sh \
+        https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
+fi
+
+REPO='https://raw.githubusercontent.com/jvs/dotfiles/ubuntu'
+wget -O ~/.gitconfig "$REPO/.gitconfig"
+wget -O ~/.gitignore "$REPO/.gitignore"
+wget -O ~/jvs-bashrc.sh "$REPO/jvs-bashrc.sh"
+unset REPO
 
 cat >>~/.bashrc <<EOL
 

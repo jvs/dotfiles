@@ -61,11 +61,6 @@ JVS_PREV_WD=$HOME
 JVS_HISTORY_DIR=$HOME/.complete_annotated_bash_history
 
 
-if [ ! -f ~/git-prompt.sh ]; then
-    wget -O ~/git-prompt.sh \
-        https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
-fi
-
 if [ -f ~/git-prompt.sh ]; then
     source ~/git-prompt.sh
 fi
