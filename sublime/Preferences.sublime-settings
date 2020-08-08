@@ -1,23 +1,28 @@
 {
     "auto_find_in_selection": false,
-    "color_scheme": "Packages/Predawn/predawn.tmTheme",
+    "color_scheme": "Packages/Dayle Rees Color Schemes/sublime/light/snappy-light.tmTheme",
     "copy_with_empty_selection": false,
     "drag_text": false,
     "ensure_newline_at_eof_on_save": false,
-    "font_size": 14,
+    "folder_exclude_patterns":
+    [
+        "__pycache__",
+        ".git"
+    ],
+    "font_face": "Fantasque Sans Mono",
+    "font_size": 16,
     "ignored_packages":
     [
-        "Vintage"
+        "Vintage",
+        "zzz A File Icon zzz"
     ],
-    "predawn_tabs_active_underline": true,
-    "predawn_tabs_medium": true,
     "rulers":
     [
         79,
         99
     ],
     "tab_size": 4,
-    "theme": "predawn-DEV.sublime-theme",
+    "theme": "Default.sublime-theme",
     "translate_tabs_to_spaces": true,
     "trim_trailing_white_space_on_save": true
 }

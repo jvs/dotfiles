@@ -1,0 +1,41 @@
+{
+    "editor.lineNumbers": "relative",
+    "editor.minimap.enabled": false,
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": true,
+        "strings": true
+    },
+    "editor.rulers": [80, 100],
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 5000,
+    "files.exclude": {
+        "**/__pycache__": true
+    },
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "git.enabled": false,
+    "telemetry.enableTelemetry": false,
+    "telemetry.enableCrashReporter": false,
+    "terminal.integrated.fontFamily": "Meslo LG L DZ for Powerline",
+    "vim.handleKeys":{
+        "<C-a>": false,
+        "<C-c>": false,
+        "<C-d>": false,
+        "<C-k>": false,
+        "<C-n>": false,
+        "<C-v>": false,
+        "<C-w>": false,
+        "<C-x>": false,
+        "<C-z>": false,
+    },
+    "vim.sneak": true,
+    "window.zoomLevel": 0,
+    "workbench.colorCustomizations": {
+        "editorIndentGuide.activeBackground": "#ffffff18",
+        "editorIndentGuide.background": "#ffffff09"
+    },
+    "workbench.editor.showIcons": false,
+    "workbench.tree.indent": 12
+}
