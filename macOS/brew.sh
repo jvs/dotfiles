@@ -15,6 +15,7 @@ function install_formula {
 install_formula ack
 install_formula icdiff
 install_formula sqlite3
+install_formula vim
 install_formula wget
 install_formula zsh
 
@@ -22,11 +23,8 @@ install_formula zsh
 # brew install scala
 # brew install sbt
 
-brew list vim || brew install vim --with-override-system-vi
-
 # chsh -s $(which zsh)
 # brew cask list iterm2 || brew cask install iterm2
-
 # brew cask install visual-studio-code
 
 brew cleanup
