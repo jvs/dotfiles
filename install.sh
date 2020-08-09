@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Exit immediately if any step fails.
 set -e
 
 if [[ `uname` == "Darwin" ]]; then
