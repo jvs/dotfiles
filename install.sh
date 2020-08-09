@@ -3,9 +3,14 @@
 # Exit immediately if any step fails.
 set -e
 
+# Echo each command.
+set -v
+
 if [[ `uname` == "Darwin" ]]; then
     ./macOS/apple.sh
     ./macOS/brew.sh
+elif command -v apt-get &> /dev/null ; then
+    ./apt/setup.sh
 fi
 
 
@@ -26,8 +31,9 @@ mkdir -p "${THEMES_DIR}"
 
 # Install oh-my-zsh.
 if [ ! -d "${HOME}/.oh-my-zsh" ]; then
+    # See: https://github.com/ohmyzsh/ohmyzsh#unattended-install
     echo "Installing oh-my-zsh"
-    sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
 ln -sf "${THIS_DIR}" ~/dotfiles

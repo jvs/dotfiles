@@ -9,4 +9,6 @@ export LANG='en_US.UTF-8';
 export LC_ALL='en_US.UTF-8';
 
 # For scala. See http://stackoverflow.com/questions/41193331/getting-cat-release-no-such-file-or-directory-when-running-scala
-export JAVA_HOME="$(/usr/libexec/java_home -v 1.8)"
+if [ -d "/usr/libexec/java_home" ]; then
+    export JAVA_HOME="$(/usr/libexec/java_home -v 1.8)"
+fi
