@@ -37,5 +37,5 @@
         "editorIndentGuide.background": "#ffffff09"
     },
     "workbench.editor.showIcons": false,
-    "workbench.tree.indent": 12
+    "workbench.tree.indent": 16
 }

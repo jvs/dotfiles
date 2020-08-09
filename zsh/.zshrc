@@ -88,7 +88,7 @@ if [[ `uname` == "Darwin" ]]; then
     HISTDB_TABULATE_CMD=(sed -e $'s/\x1f/\t/g')
 fi
 
-source $HOME/.oh-my-zsh/custom/plugins/zsh-histdb/sqlite-history.zsh
+source $ZSH_CUSTOM/plugins/zsh-histdb/sqlite-history.zsh
 autoload -Uz add-zsh-hook
 
 

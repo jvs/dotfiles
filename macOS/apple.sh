@@ -4,7 +4,7 @@
 defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
 
 # See: https://medium.com/vunamhung/set-a-blazingly-fast-keyboard-repeat-rate-3d122ddac536
-defaults write NSGlobalDomain KeyRepeat -int 1
+defaults write NSGlobalDomain KeyRepeat -int 0
 defaults write NSGlobalDomain InitialKeyRepeat -int 10
 
 # Copy vscode settings.
