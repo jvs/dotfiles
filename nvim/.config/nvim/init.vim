@@ -11,6 +11,7 @@ call plug#begin()
 
 Plug '907th/vim-auto-save'
 Plug 'ambv/black'
+Plug 'junegunn/goyo.vim'
 Plug 'mbbill/undotree'
 Plug 'mg979/vim-visual-multi', {'branch': 'master'}
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
@@ -77,6 +78,7 @@ function! CloseWindowOrKillBuffer()
   endif
 endfunction
 
+
 nnoremap <silent> <leader>q :call CloseWindowOrKillBuffer()<CR>
 
 
@@ -85,3 +87,17 @@ nnoremap <C-J> <C-W><C-J>
 nnoremap <C-K> <C-W><C-K>
 nnoremap <C-L> <C-W><C-L>
 nnoremap <C-H> <C-W><C-H>
+
+" Switch between the last two files
+nnoremap <leader><leader> <C-^>
+
+nnoremap <leader>\ :vsp<CR>
+nnoremap <C-\> :vsp<CR>
+
+nnoremap <leader>- :sp<CR>
+nnoremap <C-_> :sp<CR>
+
+nnoremap <leader>u :UndotreeToggle<CR>
+
+nnoremap <leader>1 :Goyo<CR>
+let g:goyo_width = 87
