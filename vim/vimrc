@@ -17,6 +17,7 @@ Plug 'junegunn/fzf.vim'
 
 Plug '907th/vim-auto-save'
 Plug 'kana/vim-arpeggio'
+Plug 'mg979/vim-visual-multi', {'branch': 'master'}
 
 " Initialize plugin system.
 call plug#end()
@@ -220,8 +221,10 @@ set autowriteall
 
 
 " Chords
+call arpeggio#load()
+
 " Use jk as escape.
-call arpeggio#map('i', '', 0, 'jk', '<Esc>')
+call arpeggio#map('cilnosvx', '', 0, 'jk', '<Esc>')
 
 call arpeggio#map('i', '', 0, 'df', 'def ')
 call arpeggio#map('i', '', 0, 'cl', 'class ')
