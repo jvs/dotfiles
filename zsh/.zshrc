@@ -125,8 +125,11 @@ VI_MODE_SET_CURSOR=true
 # alias zshconfig="vim ~/.zshrc"
 # alias ohmyzsh="vim ~/.oh-my-zsh"
 
-# Use G by itself to pipe to grep.
+# Use G by itself within a command to pipe to grep.
 alias -g G='| grep -i'
+
+# Use the command `d` to see the previous 10 directories.
+d='dirs -v | head -10'
 
 
 # MOTD
@@ -143,8 +146,14 @@ function greet() {
     echo_color "\033[0;90m" "  /    Search backward (normal mode)"
     echo_color "\033[0;90m" "  n    Repeat last search (normal mode)"
     echo_color "\033[0;90m" "  vv   Edit command in nvim (normal mode)"
-    echo_color "\033[0;90m" "  G    Becomes \`| grep -i\` (in the command)"
     echo_color "\033[0;90m" "  c-f  Reverse i-search histdb (insert mode)"
+    echo_color "\033[0;90m" "Expansions:"
+    echo_color "\033[0;90m" "  G    Becomes \`| grep -i\` (in the command)"
+    echo_color "\033[0;90m" "  !!   Becomes the previous command (in the command)"
+    echo_color "\033[0;90m" "Commands:"
+    echo_color "\033[0;90m" "  d    View the previous 10 directories"
+    echo_color "\033[0;90m" "  -    Go to previous directory (dash)"
+    echo_color "\033[0;90m" "  dirs -v    List previous directories"
     echo_color "\033[0;90m" "See also:"
     echo_color "\033[0;90m" "  histdb --help, _histdb_query, local_hist, greet"
 }
