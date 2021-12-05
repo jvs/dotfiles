@@ -137,20 +137,16 @@ function echo_color() {
 
 
 function greet() {
-    echo_color "\033[0;90m" "c-f  Move forward"
-    echo_color "\033[0;90m" "c-b  Move backward"
-    echo_color "\033[0;90m" "c-p  Move up"
-    echo_color "\033[0;90m" "c-n  Move down"
-    echo_color "\033[0;90m" "c-a  Jump to beginning of line"
-    echo_color "\033[0;90m" "c-e  Jump to end of line"
-    echo_color "\033[0;90m" "c-d  Delete forward"
-    echo_color "\033[0;90m" "c-h  Delete backward"
-    echo_color "\033[0;90m" "c-k  Delete forward to end of line"
-    echo_color "\033[0;90m" "c-u  Delete entire line"
-    echo_color "\033[0;90m" "c-f  Reverse search histdb"
-    echo_color "\033[0;90m" "see: bindkey"
-    echo_color "\033[0;90m" "also: histdb --help"
-    echo_color "\033[0;90m" "... _histdb_query, local_hist, greet"
+    echo_color "\033[0;90m" "Bindings:"
+    echo_color "\033[0;90m" "  c-p  Previous command (any mode)"
+    echo_color "\033[0;90m" "  c-n  Next command (any mode)"
+    echo_color "\033[0;90m" "  /    Search backward (normal mode)"
+    echo_color "\033[0;90m" "  n    Repeat last search (normal mode)"
+    echo_color "\033[0;90m" "  vv   Edit command in nvim (normal mode)"
+    echo_color "\033[0;90m" "  G    Becomes \`| grep -i\` (in the command)"
+    echo_color "\033[0;90m" "  c-f  Reverse i-search histdb (insert mode)"
+    echo_color "\033[0;90m" "See also:"
+    echo_color "\033[0;90m" "  histdb --help, _histdb_query, local_hist, greet"
 }
 
 greet
