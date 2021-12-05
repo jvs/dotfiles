@@ -123,7 +123,7 @@ function echo_color() {
 }
 
 
-function echo_motions() {
+function greet() {
     echo_color "\033[0;90m" "c-f  Move forward"
     echo_color "\033[0;90m" "c-b  Move backward"
     echo_color "\033[0;90m" "c-p  Move up"
@@ -134,9 +134,11 @@ function echo_motions() {
     echo_color "\033[0;90m" "c-h  Delete backward"
     echo_color "\033[0;90m" "c-k  Delete forward to end of line"
     echo_color "\033[0;90m" "c-u  Delete entire line"
+    echo_color "\033[0;90m" "see also: histdb --help"
+    echo_color "\033[0;90m" "... _histdb_query, show_local_history, greet"
 }
 
-echo_motions
+greet
 
 
 # See: https://github.com/larkery/zsh-histdb#integration-with-zsh-autosuggestions
