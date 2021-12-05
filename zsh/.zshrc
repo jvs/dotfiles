@@ -118,6 +118,9 @@ bindkey '^f' _histdb-isearch
 # alias zshconfig="vim ~/.zshrc"
 # alias ohmyzsh="vim ~/.oh-my-zsh"
 
+# Use G by itself to pipe to grep.
+alias -g G='| grep -i'
+
 
 # MOTD
 function echo_color() {
