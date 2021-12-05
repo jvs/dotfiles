@@ -72,7 +72,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+plugins=(git vi-mode zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -92,6 +92,13 @@ autoload -Uz add-zsh-hook
 
 source $ZSH/custom/plugins/zsh-histdb/histdb-interactive.zsh
 bindkey '^f' _histdb-isearch
+
+# Enable vi-mode.
+bindkey -v
+
+# See: https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/vi-mode#settings
+VI_MODE_RESET_PROMPT_ON_MODE_CHANGE=true
+VI_MODE_SET_CURSOR=true
 
 
 # export MANPATH="/usr/local/man:$MANPATH"
