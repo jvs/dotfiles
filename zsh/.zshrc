@@ -90,6 +90,9 @@ fi
 source $ZSH/custom/plugins/zsh-histdb/sqlite-history.zsh
 autoload -Uz add-zsh-hook
 
+source $ZSH/custom/plugins/zsh-histdb/histdb-interactive.zsh
+bindkey '^f' _histdb-isearch
+
 
 # export MANPATH="/usr/local/man:$MANPATH"
 
@@ -134,8 +137,10 @@ function greet() {
     echo_color "\033[0;90m" "c-h  Delete backward"
     echo_color "\033[0;90m" "c-k  Delete forward to end of line"
     echo_color "\033[0;90m" "c-u  Delete entire line"
-    echo_color "\033[0;90m" "see also: histdb --help"
-    echo_color "\033[0;90m" "... _histdb_query, show_local_history, greet"
+    echo_color "\033[0;90m" "c-f  Reverse search histdb"
+    echo_color "\033[0;90m" "see: bindkey"
+    echo_color "\033[0;90m" "also: histdb --help"
+    echo_color "\033[0;90m" "... _histdb_query, local_hist, greet"
 }
 
 greet
@@ -158,7 +163,7 @@ _zsh_autosuggest_strategy_histdb_top() {
 ZSH_AUTOSUGGEST_STRATEGY=histdb_top
 
 
-show_local_history() {
+local_hist() {
     limit="${1:-10}"
     local query="
         select history.start_time, commands.argv
@@ -174,10 +179,10 @@ show_local_history() {
 
 
 # will show 10 results:
-# show_local_history
+# local_hist
 
 # will show 50 results:
-# show_local_history 50
+# local_hist 50
 
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
