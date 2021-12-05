@@ -1,6 +1,19 @@
 # dotfiles
-A simple dotfiles repo.
+
+My dotfiles repo.
 
 
-## Acknowledgments
-Largely based on Mathias Bynens' [dotfiles repository](https://github.com/mathiasbynens/dotfiles).
+## Installation
+
+```bash
+git clone https://github.com/jvs/dotfiles.git
+cd dotfiles
+./install.sh
+```
+
+
+## Requirements
+
+* git
+* sqlite3
+* zsh

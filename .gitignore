@@ -1,13 +1,9 @@
-# Compiled Python files
-*.pyc
+zsh/custom/plugins
+zsh/custom/themes
 
 # Folder view configuration files
 .DS_Store
 Desktop.ini
-
-# Thumbnail cache files
-._*
-Thumbs.db
 
 # Files that might appear on external disks
 .Spotlight-V100
