@@ -9,20 +9,21 @@ set -v
 THIS_DIR="$(cd $(dirname $0) &>/dev/null && pwd && cd - &>/dev/null)"
 
 # Install oh-my-zsh.
-if [ ! -d "~/.oh-my-zsh" ]; then
+if [ ! -d "${HOME}/.oh-my-zsh" ]; then
     echo "Installing oh-my-zsh"
     # See: https://github.com/ohmyzsh/ohmyzsh#unattended-install
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
-CUSTOM_DIR="~/.oh-my-zsh/custom"
+CUSTOM_DIR="${HOME}/.oh-my-zsh/custom"
 PLUGINS_DIR="${CUSTOM_DIR}/plugins"
 THEMES_DIR="${CUSTOM_DIR}/themes"
 
-mkdir -p "${PLUGINS_DIR} ${THEMES_DIR}"
+mkdir -p "${PLUGINS_DIR}"
+mkdir -p "${THEMES_DIR}"
 
-ln -sf "${THIS_DIR}/zsh/.zshrc" "~/.zshrc"
-ln -sf "${THIS_DIR}/zsh/.p10k.zsh" "~/.p10k.zsh"
+ln -sf "${THIS_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
+ln -sf "${THIS_DIR}/zsh/.p10k.zsh" "${HOME}/.p10k.zsh"
 ln -sf "${THIS_DIR}/zsh/custom/exports.zsh" "${CUSTOM_DIR}/exports.zsh"
 ln -sf "${THIS_DIR}/zsh/custom/history.zsh" "${CUSTOM_DIR}/history.zsh"
 

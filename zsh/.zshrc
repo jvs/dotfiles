@@ -79,7 +79,7 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
-export EDITOR='vim'
+export EDITOR='nvim'
 
 
 if [[ `uname` == "Darwin" ]]; then
