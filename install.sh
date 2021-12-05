@@ -24,6 +24,7 @@ mkdir -p "${THEMES_DIR}"
 
 ln -sf "${THIS_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
 ln -sf "${THIS_DIR}/zsh/.p10k.zsh" "${HOME}/.p10k.zsh"
+
 ln -sf "${THIS_DIR}/zsh/custom/exports.zsh" "${CUSTOM_DIR}/exports.zsh"
 ln -sf "${THIS_DIR}/zsh/custom/history.zsh" "${CUSTOM_DIR}/history.zsh"
 
