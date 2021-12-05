@@ -6,40 +6,25 @@ set -e
 # Echo each command.
 set -v
 
-if [[ `uname` == "Darwin" ]]; then
-    ./macOS/apple.sh
-    ./macOS/brew.sh
-elif command -v apt-get &> /dev/null ; then
-    ./apt/setup.sh
-fi
-
-
 THIS_DIR="$(cd $(dirname $0) &>/dev/null && pwd && cd - &>/dev/null)"
-echo "Installing ${THIS_DIR}"
-
-if [ -d "${HOME}/dotfiles" ]; then
-    echo "Removing ~/dotfiles"
-    rm ~/dotfiles
-fi
-
-CUSTOM_DIR="${THIS_DIR}/zsh/custom"
-PLUGINS_DIR="${CUSTOM_DIR}/plugins"
-THEMES_DIR="${CUSTOM_DIR}/themes"
-mkdir -p "${PLUGINS_DIR}"
-mkdir -p "${THEMES_DIR}"
-
 
 # Install oh-my-zsh.
-if [ ! -d "${HOME}/.oh-my-zsh" ]; then
-    # See: https://github.com/ohmyzsh/ohmyzsh#unattended-install
+if [ ! -d "~/.oh-my-zsh" ]; then
     echo "Installing oh-my-zsh"
+    # See: https://github.com/ohmyzsh/ohmyzsh#unattended-install
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
-ln -sf "${THIS_DIR}" ~/dotfiles
-ln -sf "${THIS_DIR}/zsh/.zshrc" ~/.zshrc
-ln -sf "${THIS_DIR}/zsh/.p10k.zsh" ~/.p10k.zsh
+CUSTOM_DIR="~/.oh-my-zsh/custom"
+PLUGINS_DIR="${CUSTOM_DIR}/plugins"
+THEMES_DIR="${CUSTOM_DIR}/themes"
 
+mkdir -p "${PLUGINS_DIR} ${THEMES_DIR}"
+
+ln -sf "${THIS_DIR}/zsh/.zshrc" "~/.zshrc"
+ln -sf "${THIS_DIR}/zsh/.p10k.zsh" "~/.p10k.zsh"
+ln -sf "${THIS_DIR}/zsh/custom/exports.zsh" "${CUSTOM_DIR}/exports.zsh"
+ln -sf "${THIS_DIR}/zsh/custom/history.zsh" "${CUSTOM_DIR}/history.zsh"
 
 # Install powerlevel10k.
 # See: https://github.com/romkatv/powerlevel10k#oh-my-zsh
@@ -48,7 +33,6 @@ if [ ! -d "${THEMES_DIR}/powerlevel10k" ]; then
         "${THEMES_DIR}/powerlevel10k"
 fi
 
-
 # Install zsh-histdb.
 # See: https://github.com/larkery/zsh-histdb#installation
 if [ ! -d "${PLUGINS_DIR}/zsh-histdb" ]; then
@@ -56,14 +40,12 @@ if [ ! -d "${PLUGINS_DIR}/zsh-histdb" ]; then
         "${PLUGINS_DIR}/zsh-histdb"
 fi
 
-
 # Install zsh-autosuggestions.
 # See: https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md#oh-my-zsh
 if [ ! -d "${PLUGINS_DIR}/zsh-autosuggestions" ]; then
     git clone https://github.com/zsh-users/zsh-autosuggestions \
         "${PLUGINS_DIR}/zsh-autosuggestions"
 fi
-
 
 # Install zsh-syntax-highlighting.
 # See: https://github.com/zsh-users/zsh-syntax-highlighting/blob/master/INSTALL.md#oh-my-zsh

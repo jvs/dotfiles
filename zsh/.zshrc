@@ -66,7 +66,6 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
-ZSH_CUSTOM=~/dotfiles/zsh/custom
 
 # Which plugins would you like to load?
 # Standard plugins can be found in $ZSH/plugins/
@@ -88,7 +87,7 @@ if [[ `uname` == "Darwin" ]]; then
     HISTDB_TABULATE_CMD=(sed -e $'s/\x1f/\t/g')
 fi
 
-source $ZSH_CUSTOM/plugins/zsh-histdb/sqlite-history.zsh
+source $ZSH/custom/plugins/zsh-histdb/sqlite-history.zsh
 autoload -Uz add-zsh-hook
 
 
@@ -117,53 +116,44 @@ autoload -Uz add-zsh-hook
 # alias ohmyzsh="vim ~/.oh-my-zsh"
 
 
-
 # MOTD
 function echo_color() {
     local color="$1"
     printf "${color}$2\033[0m\n"
 }
-echo_color "\033[0;90m" "c-f  Move forward"
-echo_color "\033[0;90m" "c-b  Move backward"
-echo_color "\033[0;90m" "c-p  Move up"
-echo_color "\033[0;90m" "c-n  Move down"
-echo_color "\033[0;90m" "c-a  Jump to beginning of line"
-echo_color "\033[0;90m" "c-e  Jump to end of line"
-echo_color "\033[0;90m" "c-d  Delete forward"
-echo_color "\033[0;90m" "c-h  Delete backward"
-echo_color "\033[0;90m" "c-k  Delete forward to end of line"
-echo_color "\033[0;90m" "c-u  Delete entire line"
 
 
+function echo_motions() {
+    echo_color "\033[0;90m" "c-f  Move forward"
+    echo_color "\033[0;90m" "c-b  Move backward"
+    echo_color "\033[0;90m" "c-p  Move up"
+    echo_color "\033[0;90m" "c-n  Move down"
+    echo_color "\033[0;90m" "c-a  Jump to beginning of line"
+    echo_color "\033[0;90m" "c-e  Jump to end of line"
+    echo_color "\033[0;90m" "c-d  Delete forward"
+    echo_color "\033[0;90m" "c-h  Delete backward"
+    echo_color "\033[0;90m" "c-k  Delete forward to end of line"
+    echo_color "\033[0;90m" "c-u  Delete entire line"
+}
 
-# See: https://www.dev-diaries.com/blog/terminal-history-auto-suggestions-as-you-type/
-# Query to pull in the most recent command if anything was found similar
-# in that directory. Otherwise pull in the most recent command used anywhere
-# Give back the command that was used most recently
-_zsh_autosuggest_strategy_histdb_top_fallback() {
+echo_motions
+
+
+# See: https://github.com/larkery/zsh-histdb#integration-with-zsh-autosuggestions
+_zsh_autosuggest_strategy_histdb_top() {
     local query="
-    select commands.argv from
-    history left join commands on history.command_id = commands.rowid
-    left join places on history.place_id = places.rowid
-    where places.dir LIKE
-        case when exists(select commands.argv from history
+        select commands.argv from history
         left join commands on history.command_id = commands.rowid
         left join places on history.place_id = places.rowid
-        where places.dir LIKE '$(sql_escape $PWD)%'
-        AND commands.argv LIKE '$(sql_escape $1)%')
-            then '$(sql_escape $PWD)%'
-            else '%'
-            end
-    and commands.argv LIKE '$(sql_escape $1)%'
-    group by commands.argv
-    order by places.dir LIKE '$(sql_escape $PWD)%' desc,
-        history.start_time desc
-    limit 1"
+        where commands.argv LIKE '$(sql_escape $1)%'
+        group by commands.argv, places.dir
+        order by places.dir != '$(sql_escape $PWD)', count(*) desc
+        limit 1
+    "
     suggestion=$(_histdb_query "$query")
 }
 
-ZSH_AUTOSUGGEST_STRATEGY=histdb_top_fallback
-
+ZSH_AUTOSUGGEST_STRATEGY=histdb_top
 
 
 show_local_history() {
@@ -186,11 +176,6 @@ show_local_history() {
 
 # will show 50 results:
 # show_local_history 50
-
-
-search_local_history() {
-    show_local_history 100 | ack "$1"
-}
 
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
