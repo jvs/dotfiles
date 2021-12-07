@@ -131,7 +131,7 @@ alias -g G='| rg -i'
 # Use the command `d` to see the previous 10 directories.
 d='dirs -v | head -10'
 
-v='nvim'
+alias v='nvim'
 
 
 # MOTD
