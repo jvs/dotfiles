@@ -29,6 +29,13 @@ if [ ! -d "${THEMES_DIR}/powerlevel10k" ]; then
         "${THEMES_DIR}/powerlevel10k"
 fi
 
+# Install fzf-tab.
+# See: https://github.com/Aloxaf/fzf-tab#oh-my-zsh
+if [ ! -d "${PLUGINS_DIR}/fzf-tab" ]; then
+    git clone https://github.com/Aloxaf/fzf-tab \
+        "${PLUGINS_DIR}/fzf-tab"
+fi
+
 # Install zsh-histdb.
 # See: https://github.com/larkery/zsh-histdb#installation
 if [ ! -d "${PLUGINS_DIR}/zsh-histdb" ]; then
