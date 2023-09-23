@@ -200,3 +200,8 @@ local_hist() {
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 [[ ! -f ~/.fzf.zsh ]] || source ~/.fzf.zsh
+
+# Ensure that we're in tmux.
+if [ -z "$TMUX" ]; then
+    ta
+fi

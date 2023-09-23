@@ -14,6 +14,7 @@ THIS_DIR="$(cd $(dirname $0) &>/dev/null && pwd && cd - &>/dev/null)"
 mkdir -p ~/.config/lf/
 ln -sf "${THIS_DIR}/lfrc" ~/.config/lf/lfrc
 ln -sf "${THIS_DIR}/tmux.conf" ~/.tmux.conf
+ln -sf "${THIS_DIR}/ta" ~/ta
 
 # Install oh-my-zsh.
 ./zsh/setup.sh
