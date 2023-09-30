@@ -14,7 +14,6 @@ THIS_DIR="$(cd $(dirname $0) &>/dev/null && pwd && cd - &>/dev/null)"
 mkdir -p ~/.config/lf/
 ln -sf "${THIS_DIR}/lfrc" ~/.config/lf/lfrc
 ln -sf "${THIS_DIR}/tmux.conf" ~/.tmux.conf
-ln -sf "${THIS_DIR}/ta" ~/ta
 
 # Install oh-my-zsh.
 ./zsh/setup.sh
@@ -26,3 +25,17 @@ ln -sf "${THIS_DIR}/zsh/custom/history.zsh" "${CUSTOM_DIR}/history.zsh"
 # Create these links after installing omz.
 ln -sf "${THIS_DIR}/zsh/zshrc" "${HOME}/.zshrc"
 ln -sf "${THIS_DIR}/zsh/p10k.zsh" "${HOME}/.p10k.zsh"
+
+# Look for a bin folder.
+if [[ -d ~/bin ]]; then
+    BIN="~/bin"
+elif [[ -d ~/.local/bin ]]; then
+    BIN="~/.local/bin"
+else
+    # Create a bin folder and link to the ta script.
+    BIN="~/.local/bin"
+    mkdir -p "${BIN}"
+fi
+
+# Link to the "ta" script.
+ln -sf "${THIS_DIR}/bin/ta" "${BIN}/ta"
