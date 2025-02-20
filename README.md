@@ -37,4 +37,6 @@ See https://www.chezmoi.io/install/ for other ways to install `chezmoi`.
 
 ```bash
 chezmoi init https://github.com/jvs/dotfiles.git
+chezmoi diff
+chezmoi apply -v
 ```
