@@ -1,6 +1,6 @@
 # If you come from bash you might have to change your $PATH.
-export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH
-export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
+# export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH
+# export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
 # Setup any necessary paths located in /local.
 if [ -f /local/setup_local.sh ]; then
