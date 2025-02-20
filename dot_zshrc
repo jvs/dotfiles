@@ -32,7 +32,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # HYPHEN_INSENSITIVE="true"
 
 # Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
+DISABLE_AUTO_UPDATE="true"
 
 # Uncomment the following line to automatically update without prompting.
 # DISABLE_UPDATE_PROMPT="true"
@@ -86,18 +86,6 @@ source $ZSH/oh-my-zsh.sh
 # User configuration
 
 export EDITOR='nvim'
-
-
-if [[ `uname` == "Darwin" ]]; then
-    # See: https://github.com/larkery/zsh-histdb#note-for-os-x-users
-    HISTDB_TABULATE_CMD=(sed -e $'s/\x1f/\t/g')
-fi
-
-source $ZSH/custom/plugins/zsh-histdb/sqlite-history.zsh
-autoload -Uz add-zsh-hook
-
-source $ZSH/custom/plugins/zsh-histdb/histdb-interactive.zsh
-bindkey '^f' _histdb-isearch
 
 # Enable vi-mode.
 bindkey -v
@@ -154,7 +142,6 @@ function greet() {
     echo_color "\033[0;90m" "  /    Search backward (normal mode)"
     echo_color "\033[0;90m" "  n    Repeat last search (normal mode)"
     echo_color "\033[0;90m" "  vv   Edit command in nvim (normal mode)"
-    echo_color "\033[0;90m" "  c-f  Reverse i-search histdb (insert mode)"
     echo
     echo_color "\033[0;90m" "Expansions:"
     echo_color "\033[0;90m" "  G    Becomes \`| grep -i\` (in the command)"
@@ -164,37 +151,10 @@ function greet() {
     echo_color "\033[0;90m" "  d    View the previous 10 directories"
     echo_color "\033[0;90m" "  -    Go to previous directory (dash character)"
     echo_color "\033[0;90m" "  dirs -v    List previous directories"
-    echo_color "\033[0;90m" "  histdb     Search or show history DB"
     echo_color "\033[0;90m" "  greet      Show this message again"
-    echo
-    echo_color "\033[0;90m" "More history:"
-    echo_color "\033[0;90m" "  histdb --help, _histdb_query, local_hist"
 }
 
 greet
-
-
-local_hist() {
-    limit="${1:-25}"
-    local query="
-        select history.start_time, commands.argv
-        from history left join commands on history.command_id = commands.rowid
-        left join places on history.place_id = places.rowid
-        where places.dir LIKE '$(sql_escape "$PWD")%'
-        order by history.start_time desc
-        limit $limit
-    "
-    results=$(_histdb_query "$query")
-    echo "$results"
-}
-
-
-# will show 25 results:
-# local_hist
-
-# will show 50 results:
-# local_hist 50
-
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

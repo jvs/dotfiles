@@ -13,4 +13,3 @@ setopt HIST_FIND_NO_DUPS         # Do not display a line previously found.
 setopt HIST_REDUCE_BLANKS        # Remove superfluous blanks before recording entry.
 # setopt HIST_VERIFY               # Don't execute immediately upon history expansion.
 # setopt HIST_BEEP                 # Beep when accessing nonexistent history.
-
