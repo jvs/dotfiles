@@ -62,5 +62,4 @@ ln -sf "${THIS_DIR}/zsh/p10k.zsh" "${HOME}/.p10k.zsh"
 # Create links for the tmux files.
 BIN="~/bin"
 ln -sf "${THIS_DIR}/tmux.conf" ~/.tmux.conf
-ln -sf "${THIS_DIR}/bin/ta" "${BIN}/ta"
 ln -sf "${THIS_DIR}/bin/tmux-commands.sh" "${BIN}/tmux-commands.sh"

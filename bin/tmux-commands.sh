@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+if [[ "$1" == "always-attach" ]]; then
+  if [[ -z "$TMUX" ]]; then
+    path_name="$(basename "$PWD" | tr . -)"
+    session_name=${1-$path_name}
+    tmux new-session -As "$session_name"
+  fi
+
+  exit 0
+end
+
 if [[ -z "$TMUX" ]]; then
   echo "This script must be run from within tmux" >&2
   exit 1
