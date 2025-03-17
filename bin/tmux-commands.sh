@@ -8,7 +8,7 @@ if [[ "$1" == "always-attach" ]]; then
   fi
 
   exit 0
-end
+fi
 
 if [[ -z "$TMUX" ]]; then
   echo "This script must be run from within tmux" >&2
