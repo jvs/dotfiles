@@ -55,35 +55,30 @@ Apply latest changes: `chezmoi apply -v`
 |-------------|-------------|
 | `ctrl+a` | Prefix |
 | `ctrl+a` `?` | List all key bindings |
-| `alt+m` | Open the main menu |
-| `alt+m, s` | Create a new session |
 | `alt+p` | Open session chooser to swtich sessions |
 | `alt+t` | Open a tree view to select a session and window |
-| `alt+h` | Switch to previous session |
 | `alt+g` | Open a terminal in a popup window |
+| `alt+h` | Switch to previous window |
 | `alt+j` | Switch to next window |
 | `alt+k` | Switch to previous window |
-| `alt+m, q` | Open chooser to kill a session |
+| `alt+l` | Switch to previous session |
 | `shift+alt+{HJKL}` | Navigate panes |
+| `alt+n` | Open the main menu |
+| `alt+n, s` | Create a new session |
+| `alt+n, q` | Open chooser to kill a session |
 
 More options are available in the menu, accessible with `alt+m`.
 
 
 ## TODO
 
-### Messed up key bindings:
-
-- switch to previous session
-
 
 ### Missing key bindings:
 
-- switch to previous window
 - popup window chooser, or alt+t but just for current session
-- close current window
 - chooser to kill a window
 
 
 ### Other things:
 
-- In the `ta` script, don't always create that session when reconnecting.
+- Don't always create that session when reconnecting.
