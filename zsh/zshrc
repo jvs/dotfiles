@@ -163,5 +163,5 @@ greet
 
 # Ensure that we're in tmux.
 if [ -z "$TMUX" ]; then
-    ta
+    tmux-commands.sh always-attach
 fi

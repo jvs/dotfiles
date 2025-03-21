@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+if [[ "$1" == "always-attach" ]]; then
+  if [[ -z "$TMUX" ]]; then
+    tmux attach || tmux new-session -A -s main
+  fi
+
+  exit 0
+fi
+
 if [[ -z "$TMUX" ]]; then
   echo "This script must be run from within tmux" >&2
   exit 1
@@ -12,13 +20,14 @@ if [[ "$1" == "show-menu" ]]; then
     "Choose Session"              p "run-shell '~/bin/tmux-commands.sh choose-session'" \
     "Choose Window"               t "choose-tree -wZ" \
     "Switch to Last Session"      h "switch-client -l" \
+    "Raname Session"              n "command-prompt -p \"Rename session:\" \"rename-session '%%'\"" \
     "Kill Session"                q "run-shell '~/bin/tmux-commands.sh kill-session'" \
     "" \
     "Create New Window"           w "new-window -c \"#{pane_current_path}\"" \
-    "Rename Window"               r "command-prompt -p \"Rename window:\" \"rename-window '%%'\"" \
     "Choose Window in Session"    c "choose-tree -wf\"##{==:##{session_name},#{session_name}}\"" \
     "Switch to Last Window"       l "last-window" \
     "Open Terminal Popup"         m "run-shell '~/bin/tmux-commands.sh popup-terminal'" \
+    "Rename Window"               r "command-prompt -p \"Rename window:\" \"rename-window '%%'\"" \
     "Kill Current Window"         e "confirm-before -p \"Kill window?\" kill-window" \
     "" \
     "Split Pane Down Middle"      \\ "split-window -h -c \"#{pane_current_path}\"" \
