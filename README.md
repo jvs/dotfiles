@@ -7,46 +7,14 @@ My dotfiles repo.
 
 * git
 * zsh
-* chezmoi
 * fzf
-
-
-### Install chezmoi
-
-#### Using `brew`:
-
-```bash
-brew install chezmoi
-```
-
-#### Using `curl`:
-
-```bash
-sh -c "$(curl -fsLS get.chezmoi.io)"
-```
-
-#### Using `wget`:
-
-sh -c "$(wget -qO- get.chezmoi.io)"
-
-#### Other options:
-
-See https://www.chezmoi.io/install/ for other ways to install `chezmoi`.
 
 
 ## Installation
 
 ```bash
-chezmoi init jvs
-chezmoi diff
-chezmoi apply -v
+./install.sh
 ```
-
-
-## Usage
-
-Pull latest changes: `chezmoi update`
-Apply latest changes: `chezmoi apply -v`
 
 
 ## tmux key bindings
@@ -77,8 +45,3 @@ More options are available in the menu, accessible with `alt+m`.
 
 - popup window chooser, or alt+t but just for current session
 - chooser to kill a window
-
-
-### Other things:
-
-- Don't always create that session when reconnecting.
