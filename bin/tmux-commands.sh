@@ -92,7 +92,9 @@ fi
 
 
 if [[ "$1" == "show-window-menu" ]]; then
-    tmux list-windows -F '#W' \
-    | awk 'BEGIN {ORS=" "} {print $1, NR, "\"select-window -t", $1 "\""}' \
+  tmux list-windows -F '#I #W' \
+    | awk 'BEGIN {ORS=" "} {print $2, NR, "\"select-window -t", $1 "\""}' \
     | xargs tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C
+
+  exit 0
 fi
