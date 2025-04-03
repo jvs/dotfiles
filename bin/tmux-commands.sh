@@ -45,9 +45,12 @@ fi
 
 if [[ $1 == "choose-session" ]]; then
   tmux display-popup -h 60% -w 60% -E "\
-      tmux list-sessions -F '#{session_name}' |\
-      sed '/^$/d' |\
-      fzf --reverse --header jump-to-session --preview 'tmux capture-pane -pt {}' \
+    tmux list-sessions -F '#{session_name}' \
+    | sed '/^$/d' \
+    | fzf \
+      --reverse \
+      --header jump-to-session \
+      --preview 'tmux capture-pane -pt {}' \
       --bind 'enter:execute(tmux switch-client -t {})+accept'"
 
   exit 0
@@ -56,10 +59,13 @@ fi
 
 if [[ $1 == "kill-session" ]]; then
   tmux display-popup -h 60% -w 60% -E "\
-    tmux list-sessions -F '#{?session_attached,,#{session_name}}' |\
-    sed '/^$/d' |\
-    fzf --reverse -m --header=kill-session --preview 'tmux capture-pane -pt {}' |\
-    xargs -I {} tmux kill-session -t {}"
+    tmux list-sessions -F '#{?session_attached,,#{session_name}}' \
+    | sed '/^$/d' \
+    | fzf \
+      --reverse -m \
+      --header=kill-session \
+      --preview 'tmux capture-pane -pt {}' \
+    | xargs -I {} tmux kill-session -t {}"
 
   exit 0
 fi
