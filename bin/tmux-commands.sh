@@ -20,7 +20,7 @@ if [[ "$1" == "show-menu" ]]; then
     "Choose Session"              p "run-shell '~/bin/tmux-commands.sh choose-session'" \
     "Choose Window"               t "choose-tree -wZ" \
     "Switch to Last Session"      h "switch-client -l" \
-    "Raname Session"              n "command-prompt -p \"Rename session:\" \"rename-session '%%'\"" \
+    "Rename Session"              n "command-prompt -p \"Rename session:\" \"rename-session '%%'\"" \
     "Kill Session"                q "run-shell '~/bin/tmux-commands.sh kill-session'" \
     "" \
     "Create New Window"           w "new-window -c \"#{pane_current_path}\"" \
