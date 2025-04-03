@@ -32,6 +32,7 @@ My dotfiles repo.
 | `alt+l` | Switch to previous session |
 | `shift+alt+{HJKL}` | Navigate panes |
 | `alt+n` | Open the main menu |
+| `alt+o` | Open the window switcher menu |
 | `alt+n, s` | Create a new session |
 | `alt+n, q` | Open chooser to kill a session |
 

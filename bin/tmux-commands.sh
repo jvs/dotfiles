@@ -89,3 +89,10 @@ if [[ $1 == "popup-terminal" ]]; then
   tmux display-popup -h 80% -w 80% -E "tmux attach-session -t $popup_session:$popup_window"
   exit 0
 fi
+
+
+if [[ "$1" == "show-window-menu" ]]; then
+    tmux list-windows -F '#W' \
+    | awk 'BEGIN {ORS=" "} {print $1, NR, "\"select-window -t", $1 "\""}' \
+    | xargs tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C
+fi
