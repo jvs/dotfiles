@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 if [[ "$1" == "always-attach" ]]; then
   if [[ -z "$TMUX" ]]; then
@@ -102,5 +102,47 @@ if [[ "$1" == "show-window-menu" ]]; then
     | awk 'BEGIN {ORS=" "} {print $2, NR, "\"select-window -t", $1 "\""}' \
     | xargs tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C
 
+  exit 0
+fi
+
+if [[ "$1" == "show-command-palette" ]]; then
+  tmux display-popup -h 53% -w 33% -E "$0 fill-command-palette"
+fi
+
+if [[ "$1" == "fill-command-palette" ]]; then
+  declare -A tmux_commands=(
+    ["Choose Session"]="run-shell '~/bin/tmux-commands.sh choose-session'"
+    ["Choose Window in Session"]="choose-tree -wf\"##{==:##{session_name},#{session_name}}\""
+    ["Choose Window"]="choose-tree -wZ"
+    ["Create New Session"]="command-prompt -p \"New Session:\" \"new-session -A -s '%%'\""
+    ["Create New Window"]="new-window -c \"#{pane_current_path}\""
+    ["Detach from tmux"]="detach"
+    ["Enter Copy Mode"]="copy-mode"
+    ["Kill Current Pane"]="confirm-before -p \"Kill pane?\" kill-pane"
+    ["Kill Current Window"]="confirm-before -p \"Kill window?\" kill-window"
+    ["Kill Session"]="run-shell '~/bin/tmux-commands.sh kill-session'"
+    ["Move Pane to New Window"]="break-pane -d"
+    ["Open Terminal Popup"]="run-shell '~/bin/tmux-commands.sh popup-terminal'"
+    ["Rename Session"]="command-prompt -p \"Rename session:\" \"rename-session '%%'\""
+    ["Rename Window"]="command-prompt -p \"Rename window:\" \"rename-window '%%'\""
+    ["Split Pane Across Middle"]="split-window -v -c \"#{pane_current_path}\""
+    ["Split Pane Down Middle"]="split-window -h -c \"#{pane_current_path}\""
+    ["Switch to Last Session"]="switch-client -l"
+    ["Switch to Last Window"]="last-window"
+  )
+
+  keys=(${(k)tmux_commands})
+
+  selection=$(printf '%s\n' "${keys[@]}" |
+    fzf --reverse \
+        --layout=reverse \
+        --cycle \
+        --info=hidden \
+        --preview-window=hidden)
+
+  # Exit if no selection was made.
+  [[ -z "$selection" ]] && exit 0
+
+  eval "tmux ${tmux_commands[$selection]}"
   exit 0
 fi
