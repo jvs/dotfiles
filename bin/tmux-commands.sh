@@ -112,30 +112,39 @@ fi
 
 if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
+    # Sessions.
+    ["Create New Session"]="command-prompt -p \"New Session:\" \"new-session -A -s '%%'\""
     ["Choose Session"]="run-shell '$0 choose-session'"
+    ["Kill Other Session"]="run-shell '$0 kill-session'"
+    ["Rename Session"]="command-prompt -p \"Rename session:\" \"rename-session '%%'\""
+    ["Switch to Last Session"]="switch-client -l"
+
+    # Windows.
     ["Choose Window in Current Session"]="choose-tree -wf\"##{==:##{session_name},#{session_name}}\""
     ["Choose Window"]="choose-tree -wZ"
-    ["Create New Session"]="command-prompt -p \"New Session:\" \"new-session -A -s '%%'\""
     ["Create New Window"]="new-window -c \"#{pane_current_path}\""
-    ["Detach from tmux"]="detach"
-    ["Display Clock"]="clock-mode"
-    ["Enter Copy Mode"]="copy-mode"
-    ["Kill Current Pane"]="confirm-before -p \"Kill pane?\" kill-pane"
-    ["Kill Current Window"]="confirm-before -p \"Kill window?\" kill-window"
-    ["Kill Session"]="run-shell '$0 kill-session'"
-    ["Move Pane to New Window"]="break-pane -d"
     ["Open Window Menu"]="run-shell '$0 show-window-menu'"
-    ["Toggle Floating Terminal"]="run-shell '$0 floating-terminal'"
-    ["Toggle Status Bar"]="set -g status"
-    ["Reload tmux Configuration"]="source-file ~/.tmux.conf \; display-message \"Reloaded ~/tmux.conf\""
-    ["Rename Session"]="command-prompt -p \"Rename session:\" \"rename-session '%%'\""
+    ["Kill Current Window"]="confirm-before -p \"Kill window?\" kill-window"
     ["Rename Window"]="command-prompt -p \"Rename window:\" \"rename-window '%%'\""
-    ["Show Command Prompt"]="command-prompt -p 'Command:'"
-    ["Show World Time"]="display-popup -h 11 -w 29 -E '$0 show-world-time && read -n 1'"
+    ["Switch to Last Window"]="last-window"
+
+    # Panes.
+    ["Kill Current Pane"]="confirm-before -p \"Kill pane?\" kill-pane"
+    ["Move Pane to New Window"]="break-pane -d"
     ["Split Pane Across Middle"]="split-window -v -c \"#{pane_current_path}\""
     ["Split Pane Down Middle"]="split-window -h -c \"#{pane_current_path}\""
-    ["Switch to Last Session"]="switch-client -l"
-    ["Switch to Last Window"]="last-window"
+
+    # Utilities.
+    ["Display Clock"]="clock-mode"
+    ["Toggle Floating Terminal"]="run-shell '$0 floating-terminal'"
+    ["Show World Time"]="display-popup -h 11 -w 29 -E '$0 show-world-time && read -n 1'"
+
+    # tmux.
+    ["Detach from tmux"]="detach"
+    ["Enter Copy Mode"]="copy-mode"
+    ["Reload tmux Configuration"]="source-file ~/.tmux.conf \; display-message \"Reloaded ~/tmux.conf\""
+    ["Show Command Prompt"]="command-prompt -p 'Command:'"
+    ["Toggle Status Bar"]="set -g status"
   )
 
   keys=(${(k)tmux_commands})
