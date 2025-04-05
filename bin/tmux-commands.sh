@@ -17,7 +17,7 @@ fi
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
     "Create New Session"          s "command-prompt -p \"New Session:\" \"new-session -A -s '%%'\"" \
-    "Choose Session"              p "run-shell '~/bin/tmux-commands.sh choose-session'" \
+    "Choose Session"              p "run-shell '$0 choose-session'" \
     "Choose Window"               t "choose-tree -wZ" \
     "Switch to Last Session"      h "switch-client -l" \
     "Rename Session"              n "command-prompt -p \"Rename session:\" \"rename-session '%%'\"" \
@@ -27,7 +27,7 @@ if [[ "$1" == "show-menu" ]]; then
     "Choose Window in Session"    c "choose-tree -wf\"##{==:##{session_name},#{session_name}}\"" \
     "Open Window Menu"            o "run-shell '$0 show-window-menu'" \
     "Switch to Last Window"       l "last-window" \
-    "Toggle Floating Terminal"    m "run-shell '~/bin/tmux-commands.sh floating-terminal'" \
+    "Toggle Floating Terminal"    g "run-shell '$0 floating-terminal'" \
     "Rename Window"               r "command-prompt -p \"Rename window:\" \"rename-window '%%'\"" \
     "Kill Current Window"         e "confirm-before -p \"Kill window?\" kill-window" \
     "" \
