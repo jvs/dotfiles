@@ -182,7 +182,9 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     # Utilities.
     ["Display Clock"]="clock-mode"
     ["Toggle Floating Terminal"]="run-shell '$0 floating-terminal'"
-    ["Show World Time"]="display-popup -h 11 -w 29 -E '$0 show-world-time && read -n 1'"
+    ["Show World Time"]="display-popup -h 10 -w 29 \
+      -T '#[align=centre fg=green] World Time ' \
+      -E '$0 show-world-time && read -n 1'"
 
     # tmux.
     ["Detach from tmux"]="detach"
@@ -222,8 +224,7 @@ fi
 
 
 if [[ "$1" == "show-world-time" ]]; then
-    echo "   World Time"
-    echo "   --------------------"
+    echo ""
     echo "   Chicago:    $(TZ="America/Chicago" date "+%I:%M %p")"
     echo "   New York:   $(TZ="America/New_York" date "+%I:%M %p")"
     echo "   London:     $(TZ="Europe/London" date "+%I:%M %p")"
