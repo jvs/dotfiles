@@ -75,29 +75,72 @@ fi
 
 
 if [[ $1 == "floating-terminal" ]]; then
+  floating_session="floating-terminal"
   current_session=$(tmux display-message -p '#S')
-  current_window=$(tmux display-message -p '#W')
-  current_path=$(tmux display-message -p '#{pane_current_path}')
 
-  if [ "$current_session" = "floating-terminals" ]; then
+  terminal_window_suffix=${2:-"J"}
+  terminal_window_name="terminal-$terminal_window_suffix"
+
+  if [ "$current_session" = "$floating_session" ]; then
+    current_window=$(tmux display-message -p '#W')
+
     tmux detach-client
-    exit 0
+    tmux kill-session -t "floating-terminal"
+
+    if [ "$current_window" = "$terminal_window_name" ]; then
+      exit 0
+    else
+      "$0" floating-terminal "$terminal_window_suffix"
+      exit $?
+    fi
   fi
 
-  if [ -z "$(tmux list-sessions -F '#{session_name}' | grep "^floating-terminals$")" ]; then
-    tmux new-session -d -s "floating-terminals"
+  terminal_window_exists=$(tmux list-windows -F '#{window_name}' \
+    | grep -c "^$terminal_window_name$")
+
+  # Check the current session for the floating terminal window.
+  terminal_window_suffix=${2:-"J"}
+  terminal_window_name="terminal-$terminal_window_suffix"
+  terminal_window_exists=$(tmux list-windows -F '#{window_name}' \
+    | grep -c "^$terminal_window_name$")
+
+  # Create the terminal window if it doesn't exist.
+  if [ "$terminal_window_exists" -eq 0 ]; then
+    current_path=$(tmux display-message -p '#{pane_current_path}')
+    tmux new-window -d -n "$terminal_window_name" -t "$current_session" -c "$current_path"
   fi
 
-  floating_session="floating-terminals"
-  floating_window="$current_session--$current_window"
-  window_exists=$(tmux list-windows -t "$floating_session" -F '#{window_name}' \
-    | grep -c "^$floating_window$")
+  popup_height="80%"
+  popup_width="80%"
 
-  if [ "$window_exists" -eq 0 ]; then
-    tmux new-window -kd -n "$floating_window" -t "$floating_session" -c "$current_path"
+  # Save the original terminal size
+  original_height=$(tmux display-message -p '#{client_height}')
+  original_width=$(tmux display-message -p '#{client_width}')
+
+  # Calculate the popup size in characters
+  popup_height_chars=$(( $original_height * 80 / 100 ))
+  popup_width_chars=$(( $original_width * 80 / 100 ))
+
+  tmux resize-window -t "$terminal_window_name" -x $popup_width_chars -y $popup_height_chars
+
+  # Get the index of the terminal window.
+  terminal_window_index=$(tmux list-windows -F '#I:#W' \
+    | grep ":$terminal_window_name$" | cut -d':' -f1)
+
+  # See if we have a floating terminal session.
+  floating_session_exists=$(tmux list-sessions -F '#{session_name}' \
+    | grep -c "^$floating_session$")
+
+  # Create the floating terminal session if it doesn't exist.
+  if [ "$floating_session_exists" -eq 0 ]; then
+    tmux new-session -d -s "$floating_session"
   fi
 
-  tmux display-popup -h 80% -w 80% -E "tmux attach-session -t $floating_session:$floating_window"
+  # Link the terminal window to the floating session.
+  tmux link-window -s "$current_session:$terminal_window_index" -t "$floating_session"
+
+  tmux display-popup -h $popup_height -w $popup_width -EE "\
+    tmux attach-session -t $floating_session:$terminal_window_name"
   exit 0
 fi
 
@@ -109,6 +152,7 @@ if [[ "$1" == "show-command-palette" ]]; then
   rm -rf /tmp/tmux_command_to_run
   eval "tmux $cmd"
 fi
+
 
 if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
@@ -123,6 +167,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Choose Window in Current Session"]="choose-tree -wf\"##{==:##{session_name},#{session_name}}\""
     ["Choose Window"]="choose-tree -wZ"
     ["Create New Window"]="new-window -c \"#{pane_current_path}\""
+    ["Maximize Window"]="resize-window -A"
     ["Open Window Menu"]="run-shell '$0 show-window-menu'"
     ["Kill Current Window"]="confirm-before -p \"Kill window?\" kill-window"
     ["Rename Window"]="command-prompt -p \"Rename window:\" \"rename-window '%%'\""
@@ -145,6 +190,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Reload tmux Configuration"]="source-file ~/.tmux.conf \; display-message \"Reloaded ~/tmux.conf\""
     ["Show Command Prompt"]="command-prompt -p 'Command:'"
     ["Toggle Status Bar"]="set -g status"
+    ["Show Client Info"]="display-popup -E -h 18 -w 50 '$0 show-client-info && read -n 1'"
   )
 
   keys=(${(k)tmux_commands})
@@ -183,4 +229,32 @@ if [[ "$1" == "show-world-time" ]]; then
     echo "   London:     $(TZ="Europe/London" date "+%I:%M %p")"
     echo "   UTC:        $(TZ="UTC" date "+%I:%M %p")"
     echo "\n     [Press any key]"
+fi
+
+
+if [[ "$1" == "show-client-info" ]]; then
+  current_client=$(tmux display-message -p '#{client_name}')
+  current_pid=$(tmux display-message -p '#{client_pid}')
+  current_terminal=$(tmux display-message -p '#{client_termname}')
+  current_session=$(tmux display-message -p '#S')
+  current_window=$(tmux display-message -p '#W')
+  current_pane=$(tmux display-message -p '#P')
+  current_path=$(tmux display-message -p '#{pane_current_path}')
+  current_size=$(tmux display-message -p '#{client_width}x#{client_height}')
+
+  echo "Client info:"
+  echo "-----------------------------------------------"
+  echo "Client:    $current_client"
+  echo "PID:       $current_pid"
+  echo "Terminal:  $current_terminal"
+  echo "Size:      $current_size"
+
+  echo "\nSession info:"
+  echo "-----------------------------------------------"
+  echo "Session:   $current_session"
+  echo "Window:    $current_window"
+  echo "Pane:      $current_pane"
+  echo "Path:      $current_path"
+
+  echo "\n[Press any key]"
 fi
