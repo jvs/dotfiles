@@ -166,5 +166,5 @@ greet
 
 # Ensure that we're in tmux.
 if [ -z "$TMUX" ]; then
-    tmux-commands.sh always-attach
+    tmux-commands.zsh always-attach
 fi
