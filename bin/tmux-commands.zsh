@@ -139,8 +139,9 @@ if [[ $1 == "floating-terminal" ]]; then
   # Link the terminal window to the floating session.
   tmux link-window -s "$current_session:$terminal_window_index" -t "$floating_session"
 
-  tmux display-popup -h $popup_height -w $popup_width -EE "\
-    tmux attach-session -t $floating_session:$terminal_window_name"
+  tmux display-popup -h $popup_height -w $popup_width \
+    -T "#[align=right fg=yellow] Terminal $terminal_window_suffix " \
+    -EE "tmux attach-session -t $floating_session:$terminal_window_name"
   exit 0
 fi
 
