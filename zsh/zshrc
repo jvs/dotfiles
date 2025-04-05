@@ -82,6 +82,9 @@ plugins=(fzf-tab git vi-mode zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
+# Have fzf-tab use tmux popups.
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+
 
 # User configuration
 
