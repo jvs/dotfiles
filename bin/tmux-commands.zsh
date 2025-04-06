@@ -14,13 +14,16 @@ if [[ -z "$TMUX" ]]; then
 fi
 
 
+TMP_COMMAND_FILE="/tmp/tmux_command_to_run"
+
+
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
-    "Create New Session"          s "command-prompt -p \"New Session:\" \"new-session -A -s '%%'\"" \
+    "Create New Session"          s "command-prompt -p \" New Session:\" \"new-session -A -s '%%'\"" \
     "Choose Session"              p "run-shell '$0 choose-session'" \
     "Choose Window"               t "choose-tree -wZ" \
     "Switch to Last Session"      h "switch-client -l" \
-    "Rename Session"              n "command-prompt -p \"Rename session:\" \"rename-session '%%'\"" \
+    "Rename Session"              n "command-prompt -p \" Rename session:\" \"rename-session '%%'\"" \
     "Kill Session"                q "run-shell '$0 kill-session'" \
     "" \
     "Create New Window"           w "new-window -c \"#{pane_current_path}\"" \
@@ -28,13 +31,13 @@ if [[ "$1" == "show-menu" ]]; then
     "Open Window Menu"            o "run-shell '$0 show-window-menu'" \
     "Switch to Last Window"       l "last-window" \
     "Toggle Floating Terminal"    g "run-shell '$0 floating-terminal'" \
-    "Rename Window"               r "command-prompt -p \"Rename window:\" \"rename-window '%%'\"" \
-    "Kill Current Window"         e "confirm-before -p \"Kill window?\" kill-window" \
+    "Rename Window"               r "command-prompt -p \" Rename window:\" \"rename-window '%%'\"" \
+    "Kill Current Window"         e "confirm-before -p \" Kill window?\" kill-window" \
     "" \
     "Split Pane Down Middle"      \\ "split-window -h -c \"#{pane_current_path}\"" \
     "Split Pane Across Middle"    -  "split-window -v -c \"#{pane_current_path}\"" \
     "Move Pane to New Window"     o "break-pane -d" \
-    "Kill Current Pane"           x "confirm-before -p \"Kill pane?\" kill-pane" \
+    "Kill Current Pane"           x "confirm-before -p \" Kill pane?\" kill-pane" \
     "" \
     "Enter Copy Mode"             v "copy-mode" \
     "Detach from tmux"            d "detach" \
@@ -154,9 +157,9 @@ fi
 
 
 check_tmux_command_file() {
-  if [[ -f /tmp/tmux_command_to_run ]]; then
-    cmd=$(cat /tmp/tmux_command_to_run)
-    rm -rf /tmp/tmux_command_to_run
+  if [[ -f "$TMP_COMMAND_FILE" ]]; then
+    cmd=$(cat "$TMP_COMMAND_FILE")
+    rm -rf "$TMP_COMMAND_FILE"
     eval "tmux $cmd"
   fi
 
@@ -174,10 +177,10 @@ fi
 if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
     # Sessions.
-    ["Create New Session"]="command-prompt -p \"New Session:\" \"new-session -A -s '%%'\""
+    ["Create New Session"]="command-prompt -p \" New Session:\" \"new-session -A -s '%%'\""
     ["Choose Session"]="run-shell '$0 choose-session'"
     ["Kill Other Session"]="run-shell '$0 kill-session'"
-    ["Rename Session"]="command-prompt -p \"Rename session:\" \"rename-session '%%'\""
+    ["Rename Session"]="command-prompt -p \" Rename session:\" \"rename-session '%%'\""
     ["Switch to Last Session"]="switch-client -l"
 
     # Windows.
@@ -188,12 +191,12 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Create New Window"]="new-window -c \"#{pane_current_path}\""
     ["Maximize Window"]="resize-window -A"
     ["Open Window Menu"]="run-shell '$0 show-window-menu'"
-    ["Kill Current Window"]="confirm-before -p \"Kill window?\" kill-window"
-    ["Rename Window"]="command-prompt -p \"Rename window:\" \"rename-window '%%'\""
+    ["Kill Current Window"]="confirm-before -p \" Kill window?\" kill-window"
+    ["Rename Window"]="command-prompt -p \" Rename window:\" \"rename-window '%%'\""
     ["Switch to Last Window"]="last-window"
 
     # Panes.
-    ["Kill Current Pane"]="confirm-before -p \"Kill pane?\" kill-pane"
+    ["Kill Current Pane"]="confirm-before -p \" Kill pane?\" kill-pane"
     ["Move Pane to New Window"]="break-pane -d"
     ["Split Pane Across Middle"]="split-window -v -c \"#{pane_current_path}\""
     ["Split Pane Down Middle"]="split-window -h -c \"#{pane_current_path}\""
@@ -209,7 +212,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Detach from tmux"]="detach"
     ["Enter Copy Mode"]="copy-mode"
     ["Reload tmux Configuration"]="source-file ~/.tmux.conf \; display-message \"Reloaded ~/tmux.conf\""
-    ["Show Command Prompt"]="command-prompt -p 'Command:'"
+    ["Show Command Prompt"]="command-prompt -p ' Command:'"
     ["Toggle Status Bar"]="set -g status"
     ["Show Client Info"]="display-popup -E -h 18 -w 50 '$0 show-client-info && read -n 1'"
   )
@@ -228,7 +231,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
   [[ -z "$selection" ]] && exit 0
 
   # Write the selected command to a temporary file.
-  echo "${tmux_commands[$selection]}" > /tmp/tmux_command_to_run
+  echo "${tmux_commands[$selection]}" > "$TMP_COMMAND_FILE"
   exit 0
 fi
 
@@ -356,6 +359,7 @@ window_selector() {
   fi
 
   local original_session="$1"
+  local original_path=$(tmux display-message -p '#{pane_current_path}' -t "$original_session")
 
   local windows=$(tmux list-windows -t "$original_session" -F '#I:#W')
   local original_window=$(tmux display-message -t "$original_session" -p '#I')
@@ -470,6 +474,12 @@ window_selector() {
           update_preview
           break
           ;;
+      a)
+          echo "new-window -c \"$original_path\" -t \"$original_session\" -n \"new-window\" \
+            \; command-prompt -p \" Name window:\" \"rename-window '%%'\"" \
+            > "$TMP_COMMAND_FILE"
+          break
+          ;;
       j)
           ((current_pos < ${#window_array} - 1)) && ((current_pos++))
           # Scroll if needed
@@ -487,11 +497,12 @@ window_selector() {
           update_preview
           ;;
       d)
-          echo "confirm-before -p \"Kill window?\" kill-window" > /tmp/tmux_command_to_run
+          echo "confirm-before -p \" Kill window?\" kill-window" > "$TMP_COMMAND_FILE"
           break
           ;;
       r)
-          echo "command-prompt -p \"Rename window:\" \"rename-window '%%'\"" > /tmp/tmux_command_to_run
+          echo "command-prompt -p \" Rename window:\" \"rename-window '%%'\"" \
+            > "$TMP_COMMAND_FILE"
           break
           ;;
       p|P)
