@@ -273,7 +273,7 @@ window_selector() {
   local original_session="$1"
 
   local windows=$(tmux list-windows -t "$original_session" -F '#I:#W')
-  local current_window=$(tmux display-message -t "$original_session" -p '#I')
+  local original_window=$(tmux display-message -t "$original_session" -p '#I')
   local window_array=()
   local window_indices=()
   local window_names=()
@@ -293,7 +293,7 @@ window_selector() {
   # zcurses cursor invisible
 
   # Menu state variables
-  local current_pos=$(( current_window - 1 ))
+  local current_pos=$(( original_window - 1 ))
   local start_pos=0
   local max_visible=$(( LINES ))
   local key
@@ -375,6 +375,8 @@ window_selector() {
           update_preview
           ;;
       $'\e')  # Quit without selection
+          current_pos=$(( original_window - 1 ))
+          update_preview
           break
           ;;
       $'\n') # Enter key
