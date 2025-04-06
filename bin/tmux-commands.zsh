@@ -274,6 +274,75 @@ if [[ "$1" == "show-client-info" ]]; then
 fi
 
 
+# Function to move a window from one index to another
+move_window_index() {
+  local session="$1"
+  local source_index="$2"
+  local target_index="$3"
+  local direction="$4"
+
+  # Validate inputs.
+  if [[ -z "$session" || -z "$source_index" || -z "$target_index" ]]; then
+    echo "Error: Missing parameters (session, source_index, target_index)" >&2
+    return 1
+  fi
+
+  # Check if source window exists.
+  if ! tmux list-windows -t "$session" -F '#I' | grep -q "^${source_index}$"; then
+    echo "Error: Source window $source_index does not exist in session $session" >&2
+    return 1
+  fi
+
+  # If source and target are the same, nothing to do.
+  if [[ "$source_index" -eq "$target_index" ]]; then
+    return 0
+  fi
+
+  # Get a sorted list of window indices.
+  local window_indexes=($(tmux list-windows -t "$session" -F '#I' | sort -n))
+
+  # Find the positions of the source and target windows.
+  local source_array_index=0
+  for idx in "${window_indexes[@]}"; do
+    source_array_index=$((source_array_index + 1))
+    if [[ "$idx" -eq "$source_index" ]]; then
+      break
+    fi
+  done
+
+  local target_array_index=0
+  for idx in "${window_indexes[@]}"; do
+    target_array_index=$((target_array_index + 1))
+    if [[ "$idx" -eq "$target_index" ]]; then
+      break
+    fi
+  done
+
+  if [[ "$source_array_index" -gt "$target_array_index" && direction == "down" ]]; then
+    target_array_index=$(( target_array_index + 1 ))
+  fi
+
+  if [[ "$source_array_index" -lt "$target_array_index" && direction == "up" ]]; then
+    target_array_index=$(( target_array_index - 1 ))
+  fi
+
+  local next_array_index=0
+  while [[ "$source_array_index" -ne "$target_array_index" ]]; do
+    if [[ "$source_array_index" -lt "$target_array_index" ]]; then
+      next_array_index=$((source_array_index + 1))
+    else
+      next_array_index=$((source_array_index - 1))
+    fi
+
+    tmux swap-window \
+      -s "$session:${window_indexes[source_array_index]}" \
+      -t "$session:${window_indexes[next_array_index]}"
+
+    source_array_index="$next_array_index"
+  done
+}
+
+
 window_selector() {
   # Check if zcurses module is loaded, if not attempt to load it
   if ! zmodload -e zsh/curses; then
@@ -288,12 +357,22 @@ window_selector() {
   local window_indices=()
   local window_names=()
 
-  # Parse windows into arrays
-  for window in ${(f)windows}; do
-    window_array+=("$window")
-    window_indices+=($(echo "$window" | cut -d':' -f1))
-    window_names+=($(echo "$window" | cut -d':' -f2))
-  done
+  reload_windows() {
+    windows=$(tmux list-windows -t "$original_session" -F '#I:#W')
+    original_window=$(tmux display-message -t "$original_session" -p '#I')
+    window_array=()
+    window_indices=()
+    window_names=()
+
+    # Parse windows into arrays
+    for window in ${(f)windows}; do
+      window_array+=("$window")
+      window_indices+=($(echo "$window" | cut -d':' -f1))
+      window_names+=($(echo "$window" | cut -d':' -f2))
+    done
+  }
+
+  reload_windows
 
   # Initialize zcurses
   zcurses init
@@ -305,6 +384,7 @@ window_selector() {
   # Menu state variables
   local current_pos=$(( original_window - 1 ))
   local start_pos=0
+  local current_cut_pos=-1
   local max_visible=$(( LINES ))
   local key
   local selected_window=""
@@ -334,7 +414,11 @@ window_selector() {
         zcurses attr main 241/white
         zcurses string main " ${window_indices[i+1]}: "
 
-        zcurses attr main black/white
+        if [[ $i -eq $current_cut_pos ]]; then
+          zcurses attr main magenta/white
+        else
+          zcurses attr main black/white
+        fi
         zcurses string main "${window_names[i+1]} "
 
         # Calculate how many spaces needed to fill the rest of the line
@@ -351,7 +435,11 @@ window_selector() {
       else
         zcurses attr main 241/black
         zcurses string main " ${window_indices[i+1]}: "
-        zcurses attr main white/black
+        if [[ $i -eq $current_cut_pos ]]; then
+          zcurses attr main magenta/black
+        else
+          zcurses attr main white/black
+        fi
         zcurses string main "${window_names[i+1]}"
       fi
     done
@@ -397,6 +485,30 @@ window_selector() {
       r)
           echo "command-prompt -p \"Rename window:\" \"rename-window '%%'\"" > /tmp/tmux_command_to_run
           break
+          ;;
+      p|P)
+          if [[ $current_cut_pos -ne -1 ]]; then
+            if [[ "$current_cut_pos" -ne "current_pos" ]]; then
+              local direction="up"
+              if [[ "$key" -eq "p" ]]; then
+                direction="down"
+              fi
+              move_window_index "$original_session" \
+                "${window_indices[current_cut_pos+1]}" \
+                "${window_indices[current_pos+1]}" \
+                "$direction"
+
+              if [[ $current_cut_pos -gt $current_pos && dirction == "down" ]]; then
+                current_pos=$(( current_pos + 1 ))
+              fi
+            fi
+            current_cut_pos=-1
+            reload_windows
+            update_preview
+          fi
+          ;;
+      x)
+          current_cut_pos=$current_pos
           ;;
       $'\e')  # Quit without selection
           current_pos=$(( original_window - 1 ))
