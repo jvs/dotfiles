@@ -363,6 +363,7 @@ window_selector() {
   local window_array=()
   local window_indices=()
   local window_names=()
+  local next_name=""
 
   reload_windows() {
     windows=$(tmux list-windows -t "$original_session" -F '#I:#W')
@@ -375,7 +376,8 @@ window_selector() {
     for window in ${(f)windows}; do
       window_array+=("$window")
       window_indices+=($(echo "$window" | cut -d':' -f1))
-      window_names+=($(echo "$window" | cut -d':' -f2))
+      next_name=($(echo "$window" | cut -d':' -f2))
+      window_names+="$next_name"
     done
   }
 
