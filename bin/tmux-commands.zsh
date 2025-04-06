@@ -394,6 +394,10 @@ window_selector() {
           echo "confirm-before -p \"Kill window?\" kill-window" > /tmp/tmux_command_to_run
           break
           ;;
+      r)
+          echo "command-prompt -p \"Rename window:\" \"rename-window '%%'\"" > /tmp/tmux_command_to_run
+          break
+          ;;
       $'\e')  # Quit without selection
           current_pos=$(( original_window - 1 ))
           update_preview
