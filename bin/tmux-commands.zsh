@@ -158,7 +158,6 @@ check_tmux_command_file() {
     cmd=$(cat /tmp/tmux_command_to_run)
     rm -rf /tmp/tmux_command_to_run
     eval "tmux $cmd"
-    exit $?
   fi
 
   exit 0
