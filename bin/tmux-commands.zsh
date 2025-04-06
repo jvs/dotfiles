@@ -165,6 +165,8 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Switch to Last Session"]="switch-client -l"
 
     # Windows.
+    ["Switch Windows"]="run-shell '$0 show-window-chooser'"
+
     ["Choose Window in Current Session"]="choose-tree -wf\"##{==:##{session_name},#{session_name}}\""
     ["Choose Window"]="choose-tree -wZ"
     ["Create New Window"]="new-window -c \"#{pane_current_path}\""
@@ -259,4 +261,162 @@ if [[ "$1" == "show-client-info" ]]; then
   echo "Path:      $current_path"
 
   echo "\n[Press any key]"
+fi
+
+
+window_selector() {
+  # Check if zcurses module is loaded, if not attempt to load it
+  if ! zmodload -e zsh/curses; then
+    zmodload zsh/curses || { echo "Failed to load zcurses module"; exit 1; }
+  fi
+
+  local original_session="$1"
+
+  local windows=$(tmux list-windows -t "$original_session" -F '#I:#W')
+  local window_array=()
+  local window_indices=()
+  local window_names=()
+
+  # Parse windows into arrays
+  for window in ${(f)windows}; do
+    window_array+=("$window")
+    window_indices+=($(echo "$window" | cut -d':' -f1))
+    window_names+=($(echo "$window" | cut -d':' -f2))
+  done
+
+  # Initialize zcurses
+  zcurses init
+  zcurses addwin main $LINES $COLUMNS 0 0
+  zcurses bg main white/black
+  zcurses clear main
+  # zcurses cursor invisible
+
+  # Menu state variables
+  local current_pos=0
+  local start_pos=0
+  local max_visible=$(( LINES ))
+  local key
+  local selected_window=""
+
+  update_preview() {
+    local preview_window=${window_indices[current_pos+1]}
+    tmux select-window -t "$original_session:$preview_window"
+  }
+
+  # Draw the menu
+  draw_menu() {
+    zcurses clear main
+    zcurses move main 0 0
+    local selected_row=1
+
+    # Display visible window items
+    local visible_end=$(( start_pos + max_visible ))
+    [[ $visible_end -gt ${#window_array} ]] && visible_end=${#window_array}
+
+    for ((i = start_pos; i < visible_end; i++)); do
+      local row=$(( i - start_pos + 0 ))
+      zcurses move main $row 0
+      local text_length=${#window_indices[i+1]}
+
+      if [[ $i -eq $current_pos ]]; then
+        # Highlight current selection
+        zcurses attr main 241/white
+        zcurses string main " ${window_indices[i+1]}: "
+
+        zcurses attr main black/white
+        zcurses string main "${window_names[i+1]} "
+
+        # Calculate how many spaces needed to fill the rest of the line
+        text_length=$(( text_length + 2 + ${#window_names[i+1]} ))  # +2 for ": "
+        local padding_needed=$(( COLUMNS - text_length - 2 ))  # -2 for the left margin
+
+        # Add padding spaces to fill the line with the highlight
+        [[ $padding_needed -gt 0 ]] && zcurses string main "$(printf '%*s' $padding_needed '')"
+
+        selected_row=$row
+
+        # Reset attributes for next line
+        zcurses attr main white/black
+      else
+        zcurses attr main 241/black
+        zcurses string main " ${window_indices[i+1]}: "
+        zcurses attr main white/black
+        zcurses string main "${window_names[i+1]}"
+      fi
+    done
+
+    # zcurses move main $selected_row 0
+    zcurses move main $selected_row $(( COLUMNS - 1 ))
+    zcurses refresh main
+  }
+
+  # Main input loop
+  while true; do
+    draw_menu
+
+    zcurses input main key
+
+    case $key in
+      j)
+          ((current_pos < ${#window_array} - 1)) && ((current_pos++))
+          # Scroll if needed
+          if ((current_pos >= start_pos + max_visible)); then
+            ((start_pos++))
+          fi
+          update_preview
+          ;;
+      k)
+          ((current_pos > 0)) && ((current_pos--))
+          # Scroll if needed
+          if ((current_pos < start_pos)); then
+            ((start_pos--))
+          fi
+          update_preview
+          ;;
+      $'\e')  # Quit without selection
+          break
+          ;;
+      $'\n') # Enter key
+          selected_window=${window_indices[current_pos+1]}
+          break
+          ;;
+    esac
+  done
+
+  # Clean up zcurses
+  # zcurses cursor normal
+  zcurses delwin main
+  zcurses end
+
+  # Return the selected window
+  echo $selected_window
+}
+
+
+if [[ "$1" == "show-window-chooser" ]]; then
+  current_session=$(tmux display-message -p '#S')
+
+  num_windows=$(tmux list-windows -t "$current_session" | wc -l)
+
+  num_characters=$(tmux list-windows -t "$current_session" -F '#{window_name}' | \
+    awk '{ print length($0) }' | \
+    sort -nr | \
+    head -n 1)
+
+  popup_height=$(( num_windows + 2 ))
+  popup_width=$(( num_characters + 9 ))
+
+  tmux display-popup -h "$popup_height" -w "$popup_width" \
+    -T "#[align=centre fg=yellow] Windows " \
+    -EE "$0 show-window-chooser-body '$current_session'"
+
+  # cmd=$(cat /tmp/tmux_command_to_run)
+  # rm -rf /tmp/tmux_command_to_run
+  # eval "tmux $cmd"
+fi
+
+
+if [[ "$1" == "show-window-chooser-body" ]]; then
+  original_session="$2"
+  window_selector "$original_session"
 fi
