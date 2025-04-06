@@ -146,12 +146,22 @@ if [[ $1 == "floating-terminal" ]]; then
 fi
 
 
+check_tmux_command_file() {
+  if [[ -f /tmp/tmux_command_to_run ]]; then
+    cmd=$(cat /tmp/tmux_command_to_run)
+    rm -rf /tmp/tmux_command_to_run
+    eval "tmux $cmd"
+    exit $?
+  fi
+
+  exit 0
+}
+
+
 if [[ "$1" == "show-command-palette" ]]; then
   tmux display-popup -h 53% -w 33% -E "$0 show-command-palette-body"
-
-  cmd=$(cat /tmp/tmux_command_to_run)
-  rm -rf /tmp/tmux_command_to_run
-  eval "tmux $cmd"
+  check_tmux_command_file
+  exit 0
 fi
 
 
@@ -358,6 +368,12 @@ window_selector() {
     zcurses input main key
 
     case $key in
+      1|2|3|4|5|6|7|8|9)
+          current_pos=$(($key - 1))
+          start_pos=0
+          update_preview
+          break
+          ;;
       j)
           ((current_pos < ${#window_array} - 1)) && ((current_pos++))
           # Scroll if needed
@@ -374,13 +390,16 @@ window_selector() {
           fi
           update_preview
           ;;
+      d)
+          echo "confirm-before -p \"Kill window?\" kill-window" > /tmp/tmux_command_to_run
+          break
+          ;;
       $'\e')  # Quit without selection
           current_pos=$(( original_window - 1 ))
           update_preview
           break
           ;;
       $'\n') # Enter key
-          selected_window=${window_indices[current_pos+1]}
           break
           ;;
     esac
@@ -390,9 +409,6 @@ window_selector() {
   # zcurses cursor normal
   zcurses delwin main
   zcurses end
-
-  # Return the selected window
-  echo $selected_window
 }
 
 
@@ -413,9 +429,8 @@ if [[ "$1" == "show-window-chooser" ]]; then
     -T "#[align=centre fg=yellow] Windows " \
     -EE "$0 show-window-chooser-body '$current_session'"
 
-  # cmd=$(cat /tmp/tmux_command_to_run)
-  # rm -rf /tmp/tmux_command_to_run
-  # eval "tmux $cmd"
+  check_tmux_command_file
+  exit $?
 fi
 
 
