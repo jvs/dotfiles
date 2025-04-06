@@ -132,12 +132,19 @@ if [[ $1 == "floating-terminal" ]]; then
     | grep -c "^$floating_session$")
 
   # Create the floating terminal session if it doesn't exist.
+  discard_window_index=-1
   if [ "$floating_session_exists" -eq 0 ]; then
     tmux new-session -d -s "$floating_session"
+
+    discard_window_index=$(tmux display-message -p '#I')
   fi
 
   # Link the terminal window to the floating session.
   tmux link-window -s "$current_session:$terminal_window_index" -t "$floating_session"
+
+  if [[ discard_window_index -ne -1 ]]; then
+    tmux kill-window -t "$floating_session:$discard_window_index"
+  fi
 
   tmux display-popup -h $popup_height -w $popup_width \
     -T "#[align=right fg=yellow] Terminal $terminal_window_suffix " \
