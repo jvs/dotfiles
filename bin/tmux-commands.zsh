@@ -160,7 +160,7 @@ check_tmux_command_file() {
   if [[ -f "$TMP_COMMAND_FILE" ]]; then
     cmd=$(cat "$TMP_COMMAND_FILE")
     rm -rf "$TMP_COMMAND_FILE"
-    eval "tmux $cmd"
+    eval "$cmd"
   fi
 
   exit 0
@@ -177,7 +177,7 @@ fi
 if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
     # Sessions.
-    ["Create New Session"]="command-prompt -p \" New Session:\" \"new-session -A -s '%%'\""
+    ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
     ["Kill Other Session"]="run-shell '$0 kill-session'"
     ["Rename Session"]="command-prompt -p \" Rename session:\" \"rename-session '%%'\""
@@ -186,7 +186,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     # Windows.
     ["Switch Windows"]="run-shell '$0 show-window-chooser'"
 
-    ["Choose Window in Current Session"]="choose-tree -wf\"##{==:##{session_name},#{session_name}}\""
+    # ["Choose Window in Current Session"]="choose-tree -wf\"##{==:##{session_name},#{session_name}}\""
     ["Choose Window"]="choose-tree -wZ"
     ["Create New Window"]="new-window -c \"#{pane_current_path}\""
     ["Maximize Window"]="resize-window -A"
@@ -213,6 +213,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Enter Copy Mode"]="copy-mode"
     ["Reload tmux Configuration"]="source-file ~/.tmux.conf \; display-message \"Reloaded ~/tmux.conf\""
     ["Show Command Prompt"]="command-prompt -p ' Command:'"
+    ["Show Messages"]="show-messages"
     ["Toggle Status Bar"]="set -g status"
     ["Show Client Info"]="display-popup -E -h 18 -w 50 '$0 show-client-info && read -n 1'"
   )
@@ -231,7 +232,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
   [[ -z "$selection" ]] && exit 0
 
   # Write the selected command to a temporary file.
-  echo "${tmux_commands[$selection]}" > "$TMP_COMMAND_FILE"
+  echo "tmux ${tmux_commands[$selection]}" > "$TMP_COMMAND_FILE"
   exit 0
 fi
 
@@ -475,7 +476,7 @@ window_selector() {
           break
           ;;
       a)
-          echo "new-window -c \"$original_path\" -t \"$original_session\" -n \"new-window\" \
+          echo "tmux new-window -c \"$original_path\" -t \"$original_session\" -n \"new-window\" \
             \; command-prompt -p \" Name window:\" \"rename-window '%%'\"" \
             > "$TMP_COMMAND_FILE"
           break
@@ -497,11 +498,11 @@ window_selector() {
           update_preview
           ;;
       d)
-          echo "confirm-before -p \" Kill window?\" kill-window" > "$TMP_COMMAND_FILE"
+          echo "tmux confirm-before -p \" Kill window?\" kill-window" > "$TMP_COMMAND_FILE"
           break
           ;;
       r)
-          echo "command-prompt -p \" Rename window:\" \"rename-window '%%'\"" \
+          echo "tmux command-prompt -p \" Rename window:\" \"rename-window '%%'\"" \
             > "$TMP_COMMAND_FILE"
           break
           ;;
@@ -572,4 +573,18 @@ fi
 if [[ "$1" == "show-window-chooser-body" ]]; then
   original_session="$2"
   window_selector "$original_session"
+fi
+
+
+if [[ "$1" == "create-new-session" ]]; then
+  # For some reason, tmux makes this really difficult. I don't know why it's
+  # so much easier from the display-menu.
+  if [[ -z "$2" ]]; then
+    tmux command-prompt -p " New Session:" "run-shell '$0 create-new-session \"%%\"'"
+    exit 0
+  fi
+
+  tmux new-session -d -s "$2" -c "#{pane_current_path}"
+  tmux switch-client -t "$2"
+  exit 0
 fi

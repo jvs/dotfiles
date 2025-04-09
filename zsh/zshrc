@@ -2,9 +2,14 @@
 # export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH
 # export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
-# Setup any necessary paths located in /local.
+# Apply any extra configuration in /local.
 if [ -f /local/setup_local.sh ]; then
     source /local/setup_local.sh
+fi
+
+# Apply any extra configuration in /local.
+if [ -f /local/setup_local.zsh ]; then
+    source /local/setup_local.zsh
 fi
 
 
