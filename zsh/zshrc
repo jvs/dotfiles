@@ -2,16 +2,6 @@
 # export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH
 # export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
-# Apply any extra configuration in /local.
-if [ -f /local/setup_local.sh ]; then
-    source /local/setup_local.sh
-fi
-
-# Apply any extra configuration in /local.
-if [ -f /local/setup_local.zsh ]; then
-    source /local/setup_local.zsh
-fi
-
 
 # Path to your oh-my-zsh installation.
 export ZSH=$HOME/.oh-my-zsh
@@ -168,6 +158,16 @@ greet
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 [[ ! -f ~/.fzf.zsh ]] || source ~/.fzf.zsh
+
+# Apply any extra configuration in /local.
+if [ -f /local/setup_local.sh ]; then
+    source /local/setup_local.sh
+fi
+
+# Apply any extra configuration in /local.
+if [ -f /local/setup_local.zsh ]; then
+    source /local/setup_local.zsh
+fi
 
 # Ensure that we're in tmux.
 if [ -z "$TMUX" ]; then

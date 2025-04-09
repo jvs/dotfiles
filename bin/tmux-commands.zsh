@@ -98,9 +98,6 @@ if [[ $1 == "floating-terminal" ]]; then
     fi
   fi
 
-  terminal_window_exists=$(tmux list-windows -F '#{window_name}' \
-    | grep -c "^$terminal_window_name$")
-
   # Check the current session for the floating terminal window.
   terminal_window_suffix=${2:-"J"}
   terminal_window_name="terminal-$terminal_window_suffix"
@@ -108,9 +105,18 @@ if [[ $1 == "floating-terminal" ]]; then
     | grep -c "^$terminal_window_name$")
 
   # Create the terminal window if it doesn't exist.
-  if [ "$terminal_window_exists" -eq 0 ]; then
+  if [[ "$terminal_window_exists" -eq 0 ]]; then
     current_path=$(tmux display-message -p '#{pane_current_path}')
-    tmux new-window -d -n "$terminal_window_name" -t "$current_session" -c "$current_path"
+    tmux new-window -d -n "$terminal_window_name" -c "$current_path"
+  fi
+
+  # Get the index of the terminal window.
+  terminal_window_index=$(tmux list-windows -F '#I:#W' \
+    | grep ":$terminal_window_name$" | cut -d':' -f1)
+
+  if [[ ! "$terminal_window_index" ]]; then
+    echo "Error: Terminal window not found."
+    exit 0
   fi
 
   popup_height="80%"
@@ -125,10 +131,6 @@ if [[ $1 == "floating-terminal" ]]; then
   popup_width_chars=$(( $original_width * 80 / 100 ))
 
   tmux resize-window -t "$terminal_window_name" -x $popup_width_chars -y $popup_height_chars
-
-  # Get the index of the terminal window.
-  terminal_window_index=$(tmux list-windows -F '#I:#W' \
-    | grep ":$terminal_window_name$" | cut -d':' -f1)
 
   # See if we have a floating terminal session.
   floating_session_exists=$(tmux list-sessions -F '#{session_name}' \
