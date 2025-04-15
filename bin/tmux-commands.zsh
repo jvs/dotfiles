@@ -19,12 +19,13 @@ TMP_COMMAND_FILE="/tmp/tmux_command_to_run"
 
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
+    "Open Supertree"              u "run-shell '$0 show-supertree'" \
     "Create New Session"          s "command-prompt -p \" New Session:\" \"new-session -A -s '%%'\"" \
     "Choose Session"              p "run-shell '$0 choose-session'" \
     "Choose Window"               t "choose-tree -wZ" \
     "Switch to Last Session"      h "switch-client -l" \
     "Rename Session"              n "command-prompt -p \" Rename session:\" \"rename-session '%%'\"" \
-    "Kill Session"                q "run-shell '$0 kill-session'" \
+    "Kill Other Session"          q "run-shell '$0 kill-session'" \
     "" \
     "Create New Window"           w "new-window -c \"#{pane_current_path}\"" \
     "Choose Window in Session"    c "choose-tree -wf\"##{==:##{session_name},#{session_name}}\"" \
@@ -179,6 +180,7 @@ fi
 if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
     # Sessions.
+    ["Open Supertree"]="run-shell '$0 show-supertree'"
     ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
     ["Kill Other Session"]="run-shell '$0 kill-session'"
@@ -589,4 +591,55 @@ if [[ "$1" == "create-new-session" ]]; then
   tmux new-session -d -s "$2" -c "#{pane_current_path}"
   tmux switch-client -t "$2"
   exit 0
+fi
+
+
+function get_max_length() {
+  local max=0
+  local length=0
+
+  while read -r line; do
+    length=${#line}
+    if (( length > max )); then
+      max=$length
+    fi
+  done
+
+  echo $max
+}
+
+
+if [[ "$1" == "show-supertree" ]]; then
+  session_count=$(tmux list-sessions 2>/dev/null | wc -l)
+  window_count=$(tmux list-windows -a 2>/dev/null | wc -l)
+  total_count=$((session_count + window_count))
+  total_height=$((total_count + 7))
+
+  longest_session_name=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | get_max_length)
+  longest_window_name=$(tmux list-windows -a -F "#{window_name}" 2>/dev/null | get_max_length)
+  logest_window_name=$((longest_window_name + 3))
+
+  if (( longest_session_name > longest_window_name )); then
+    longest_name=$((longest_session_name + 3))
+  else
+    longest_name=$((longest_window_name + 3))
+  fi
+
+  if (( longest_name < 24 )); then
+    longest_name=24
+  fi
+
+  total_width=$((longest_name + 4))
+
+  tmux display-popup -h "$total_height" -w "$total_width" \
+    -b rounded \
+    -T "#[align=centre fg=white] supertree " \
+    -EE "$0 show-supertree-body"
+fi
+
+
+if [[ "$1" == "show-supertree-body" ]]; then
+  # TODO: Install tmux-supertree somewhere.
+  cd "/Users/john/github/jvs/tmux-supertree"
+  uv run python -m tmux_supertree.main
 fi
