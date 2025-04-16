@@ -62,3 +62,12 @@ ln -sf "${THIS_DIR}/zsh/p10k.zsh" "${HOME}/.p10k.zsh"
 # Create links for the tmux files.
 ln -sf "${THIS_DIR}/tmux.conf" "${HOME}/.tmux.conf"
 ln -sf "${THIS_DIR}/bin/tmux-commands.zsh" "${HOME}/bin/tmux-commands.zsh"
+
+
+# Install supertree.
+mkdir -p "${THIS_DIR}/runtime/"
+
+if [ ! -d "${THIS_DIR}/runtime/tmux-supertree" ]; then
+    git clone https://github.com/jvs/tmux-supertree.git \
+        "${THIS_DIR}/runtime/tmux-supertree"
+fi

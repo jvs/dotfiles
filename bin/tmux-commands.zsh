@@ -654,8 +654,16 @@ fi
 
 
 if [[ "$1" == "show-supertree-body" ]]; then
-  # TODO: Install tmux-supertree somewhere.
-  cd "/Users/john/github/jvs/tmux-supertree"
+  SCRIPT_PATH="$0"
+  if [ -L "$SCRIPT_PATH" ]; then
+    REAL_PATH=$(readlink -f "$SCRIPT_PATH")
+  else
+    REAL_PATH="$SCRIPT_PATH"
+  fi
+
+  BIN_DIR=$(dirname "$REAL_PATH")
+
+  cd "$BIN_DIR/../runtime/tmux-supertree"
   uv run python -m tmux_supertree.main \
     --command-file "$TMP_COMMAND_FILE" \
     --return-command "$0 show-supertree"
