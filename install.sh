@@ -65,9 +65,11 @@ ln -sf "${THIS_DIR}/bin/tmux-commands.zsh" "${HOME}/bin/tmux-commands.zsh"
 
 
 # Install supertree.
-mkdir -p "${THIS_DIR}/runtime/"
+if [ ! -d "${HOME}/github/jvs/tmux-supertree" ]; then
+    mkdir -p "${THIS_DIR}/runtime/"
 
-if [ ! -d "${THIS_DIR}/runtime/tmux-supertree" ]; then
-    git clone https://github.com/jvs/tmux-supertree.git \
-        "${THIS_DIR}/runtime/tmux-supertree"
+    if [ ! -d "${THIS_DIR}/runtime/tmux-supertree" ]; then
+        git clone https://github.com/jvs/tmux-supertree.git \
+            "${THIS_DIR}/runtime/tmux-supertree"
+    fi
 fi
