@@ -79,45 +79,76 @@ fi
 
 
 if [[ $1 == "floating-terminal" ]]; then
-  floating_session="floating-terminal"
-  current_session=$(tmux display-message -p '#S')
+  floating_session_name="__floating_terminals__"
+  floating_window_suffix=${2:-"J"}
+  current_session_name=$(tmux display-message -p '#{session_name}')
 
-  terminal_window_suffix=${2:-"J"}
-  terminal_window_name="terminal-$terminal_window_suffix"
+  # If the floating terminal is already open, close it.
+  if [[ "$current_session_name" = "$floating_session_name" ]]; then
+    current_window_name=$(tmux display-message -p '#W')
+    current_window_suffix=$(echo "$current_window_name" | cut -d'-' -f2)
 
-  if [ "$current_session" = "$floating_session" ]; then
-    current_window=$(tmux display-message -p '#W')
-
-    tmux detach-client
-    tmux kill-session -t "floating-terminal"
-
-    if [ "$current_window" = "$terminal_window_name" ]; then
+    if [[ "$current_window_suffix" == "$floating_window_suffix" ]]; then
+      tmux detach-client -s "$floating_session_name"
       exit 0
-    else
-      "$0" floating-terminal "$terminal_window_suffix"
-      exit $?
     fi
   fi
 
-  # Check the current session for the floating terminal window.
-  terminal_window_suffix=${2:-"J"}
-  terminal_window_name="terminal-$terminal_window_suffix"
-  terminal_window_exists=$(tmux list-windows -F '#{window_name}' \
-    | grep -c "^$terminal_window_name$")
+  current_path=$(tmux display-message -p '#{pane_current_path}')
 
-  # Create the terminal window if it doesn't exist.
-  if [[ "$terminal_window_exists" -eq 0 ]]; then
-    current_path=$(tmux display-message -p '#{pane_current_path}')
-    tmux new-window -d -n "$terminal_window_name" -c "$current_path"
+  if [[ "$current_session_name" = "$floating_session_name" ]]; then
+    # If a different floating terminal is open, get its source window ID.
+    current_window_name=$(tmux display-message -p '#W')
+    clean_window_id=$(echo "$current_window_name" | cut -d'-' -f3)
+  else
+    current_window_id=$(tmux display-message -p '#{window_id}')
+    clean_window_id=${current_window_id//[^a-zA-Z0-9_\-]/}
   fi
 
-  # Get the index of the terminal window.
-  terminal_window_index=$(tmux list-windows -F '#I:#W' \
-    | grep ":$terminal_window_name$" | cut -d':' -f1)
+  floating_window_name="terminal-$floating_window_suffix-$clean_window_id"
 
-  if [[ ! "$terminal_window_index" ]]; then
+  floating_session_exists=$(tmux list-sessions -F '#{session_name}' \
+    | grep -c "^$floating_session_name$")
+
+  # Create the floating terminal session if it doesn't exist.
+  # discard_window_id=''
+  if [[ "$floating_session_exists" -eq 0 ]]; then
+    tmux new-session -d -s "$floating_session_name"
+
+    # discard_window_id=$(tmux display-message -t "$floating_session_name" -p '#{window_id}')
+  fi
+
+  # Check the floating session for the floating terminal window.
+  floating_window_exists=$(tmux list-windows \
+    -t "$floating_session_name" \
+    -F '#{window_name}' \
+    | grep -c "^${floating_window_name}$")
+
+  # Create the floating window if it doesn't exist.
+  if [[ "$floating_window_exists" -eq 0 ]]; then
+    tmux new-window -d \
+      -t "$floating_session_name" \
+      -n "$floating_window_name" \
+      -c "$current_path"
+  fi
+
+  # Get the ID of the floating window.
+  floating_window_id=$(tmux list-windows \
+    -t "$floating_session_name" \
+    -F '#{window_id}:#{window_name}' \
+    | grep ":${floating_window_name}$" | cut -d':' -f1)
+
+  if [[ ! "$floating_window_id" ]]; then
     echo "Error: Terminal window not found."
     exit 0
+  fi
+
+  # if [[ discard_window_id != '' ]]; then
+  #   tmux kill-window -t "$floating_session_name:$discard_window_id"
+  # fi
+
+  if [[ "$current_session_name" = "$floating_session_name" ]]; then
+    tmux detach-client -s "$floating_session_name"
   fi
 
   popup_height="80%"
@@ -131,30 +162,12 @@ if [[ $1 == "floating-terminal" ]]; then
   popup_height_chars=$(( $original_height * 80 / 100 ))
   popup_width_chars=$(( $original_width * 80 / 100 ))
 
-  tmux resize-window -t "$terminal_window_name" -x $popup_width_chars -y $popup_height_chars
-
-  # See if we have a floating terminal session.
-  floating_session_exists=$(tmux list-sessions -F '#{session_name}' \
-    | grep -c "^$floating_session$")
-
-  # Create the floating terminal session if it doesn't exist.
-  discard_window_index=-1
-  if [ "$floating_session_exists" -eq 0 ]; then
-    tmux new-session -d -s "$floating_session"
-
-    discard_window_index=$(tmux display-message -p '#I')
-  fi
-
-  # Link the terminal window to the floating session.
-  tmux link-window -s "$current_session:$terminal_window_index" -t "$floating_session"
-
-  if [[ discard_window_index -ne -1 ]]; then
-    tmux kill-window -t "$floating_session:$discard_window_index"
-  fi
+  tmux resize-window -t "$floating_window_id" -x $popup_width_chars -y $popup_height_chars
 
   tmux display-popup -h $popup_height -w $popup_width \
-    -T "#[align=right fg=yellow] Terminal $terminal_window_suffix " \
-    -EE "tmux attach-session -t $floating_session:$terminal_window_name"
+    -T "#[align=right fg=yellow] Terminal $floating_window_suffix " \
+    -EE "tmux attach-session -t '$floating_session_name:$floating_window_id'"
+
   exit 0
 fi
 
@@ -635,11 +648,15 @@ if [[ "$1" == "show-supertree" ]]; then
     -b rounded \
     -T "#[align=centre fg=white] supertree " \
     -EE "$0 show-supertree-body"
+
+  check_tmux_command_file
 fi
 
 
 if [[ "$1" == "show-supertree-body" ]]; then
   # TODO: Install tmux-supertree somewhere.
   cd "/Users/john/github/jvs/tmux-supertree"
-  uv run python -m tmux_supertree.main
+  uv run python -m tmux_supertree.main \
+    --command-file "$TMP_COMMAND_FILE" \
+    --return-command "$0 show-supertree"
 fi
