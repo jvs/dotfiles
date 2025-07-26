@@ -9,14 +9,11 @@ My dotfiles repo.
 * zsh
 * fzf
 
+
 ### Notes
 
-After installing `fzf` with homebrew, run the following command to install the
-key bindings and fuzzy completion:
-
-```bash
-$(brew --prefix)/opt/fzf/install
-```
+After installing `fzf` with homebrew, to set up shell integration, see:
+  https://github.com/junegunn/fzf#setting-up-shell-integration
 
 
 ## Installation
