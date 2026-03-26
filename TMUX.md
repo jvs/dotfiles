@@ -62,9 +62,27 @@ Zen mode centers the current pane at 120 columns by adding blank panes on each s
 - Requires terminal width > 130 columns.
 - alt+shift+Z shows a prompt with the current pane width and lets you type a new width (e.g. 80 for prose, 200 for wide logs). Also available in the command palette as "Resize Zen Mode".
 
+**Zen cleanup**: when the main pane of a zen window exits (e.g. via `exit`), the window is automatically killed instead of leaving orphaned side panes. This uses a `pane-exited` hook that checks if all remaining panes are zen panes.
+
+> **Known issue**: if you manually split a zen window and then exit the original pane, the cleanup will kill the entire window — including the manual split. Avoid manual splits inside zen windows.
+
 ## Moving Windows Between Lanes
 
 Available from the command palette (alt+y) as "Move Window to Another Lane", or from the menu (alt+n). Shows a picker to choose the target lane.
+
+## Command Palette
+
+Open with **alt+y**. An fzf-powered list of all available commands:
+
+**Sessions**: Open Supertree, Create New Session, Choose Session, Kill Other Session, Rename Session, Switch to Last Session.
+
+**Windows / Lanes**: Choose Window, Create New Window in Lane, Kill Current Window, Maximize Window, Move Window to Another Lane, Rename Window.
+
+**Panes**: Kill Current Pane, Move Pane to New Window, Split Pane Across Middle, Split Pane Down Middle, Toggle Zen Mode, Resize Zen Mode.
+
+**Utilities**: Display Clock, Toggle Floating Terminal J/K, Show World Time.
+
+**tmux**: Detach All Other Clients, Detach from tmux, Enter Copy Mode, Kill Server, Reload tmux Configuration, Show Command Prompt, Show Messages, Toggle Status Bar, Show Client Info.
 
 ## General Navigation
 
@@ -94,6 +112,10 @@ Lane state is stored as tmux options:
 - **Session options**: `@lane_initialized`, `@current_lane`, `@prev_lane`, `@lane_h_window`, `@lane_j_window`, etc.
 - **Window options**: `@lane` (which lane a window belongs to: h, j, k, l, or semi)
 - **Pane options**: `@zen_pane` (1 on zen mode side panes)
+
+## Known Issues
+
+- **Global command file**: the command palette and supertree use a single temp file (`/tmp/tmux_command_to_run`) to pass the selected command back to tmux. If two sessions trigger a palette command at the same time, one can clobber the other.
 
 ## Files
 

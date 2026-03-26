@@ -132,7 +132,6 @@ if [[ "$1" == "switch-lane" ]]; then
   # Show lane indicator.
   local display_lane=${target}
   [[ "$target" == "semi" ]] && display_lane=";"
-  tmux set-option -g message-style 'bg=black,fg=green'
   tmux display-message "[ Lane ${display_lane:u} ]"
 
   # Try to switch to the target lane's last window.
@@ -559,7 +558,6 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Show Client Info"]="display-popup -E -h 19 -w 50 '$0 show-client-info && read -n 1'"
   )
 
-  keys=(${(k)tmux_commands})
   keys=(${(i)${(k)tmux_commands}})
 
   selection=$(printf '%s\n' "${keys[@]}" |
@@ -675,11 +673,11 @@ move_window_index() {
     fi
   done
 
-  if [[ "$source_array_index" -gt "$target_array_index" && direction == "down" ]]; then
+  if [[ "$source_array_index" -gt "$target_array_index" && "$direction" == "down" ]]; then
     target_array_index=$(( target_array_index + 1 ))
   fi
 
-  if [[ "$source_array_index" -lt "$target_array_index" && direction == "up" ]]; then
+  if [[ "$source_array_index" -lt "$target_array_index" && "$direction" == "up" ]]; then
     target_array_index=$(( target_array_index - 1 ))
   fi
 
@@ -865,7 +863,7 @@ window_selector() {
                 "${window_indices[current_pos+1]}" \
                 "$direction"
 
-              if [[ $current_cut_pos -gt $current_pos && dirction == "down" ]]; then
+              if [[ $current_cut_pos -gt $current_pos && "$direction" == "down" ]]; then
                 current_pos=$(( current_pos + 1 ))
               fi
             fi
@@ -960,8 +958,6 @@ if [[ "$1" == "show-supertree" ]]; then
 
   longest_session_name=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | get_max_length)
   longest_window_name=$(tmux list-windows -a -F "#{window_name}" 2>/dev/null | get_max_length)
-  logest_window_name=$((longest_window_name + 3))
-
   if (( longest_session_name > longest_window_name )); then
     longest_name=$((longest_session_name + 3))
   else
