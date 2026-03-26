@@ -17,23 +17,221 @@ fi
 TMP_COMMAND_FILE="/tmp/tmux_command_to_run"
 
 
+# ---------------------------------------------------------------------------
+# Lane helpers
+# ---------------------------------------------------------------------------
+
+ensure_lanes() {
+  local initialized=$(tmux show-option -qv @lane_initialized)
+  if [[ "$initialized" == "1" ]]; then
+    return 0
+  fi
+
+  # Tag every existing window with lane "j".
+  local win_ids=($(tmux list-windows -F '#{window_id}'))
+  for wid in "${win_ids[@]}"; do
+    tmux set-option -w -t "$wid" @lane j
+  done
+
+  # Record the current window as lane-j's last window.
+  local cur_wid=$(tmux display-message -p '#{window_id}')
+  tmux set-option @lane_j_window "$cur_wid"
+  tmux set-option @current_lane j
+  tmux set-option @prev_lane j
+  tmux set-option @lane_initialized 1
+}
+
+
+# Check if a window id still exists in the current session.
+window_exists() {
+  tmux list-windows -F '#{window_id}' | grep -q "^${1}$"
+}
+
+
+if [[ "$1" == "switch-lane" ]]; then
+  ensure_lanes
+  target="$2"
+  current_lane=$(tmux show-option -qv @current_lane)
+  current_wid=$(tmux display-message -p '#{window_id}')
+
+  # Save the current window for the current lane.
+  tmux set-option "@lane_${current_lane}_window" "$current_wid"
+
+  if [[ "$target" == "$current_lane" ]]; then
+    # Flashback: swap to previous lane.
+    target=$(tmux show-option -qv @prev_lane)
+    # If prev == current (no history), do nothing.
+    if [[ "$target" == "$current_lane" ]]; then
+      exit 0
+    fi
+  fi
+
+  # Update lane tracking.
+  tmux set-option @prev_lane "$current_lane"
+  tmux set-option @current_lane "$target"
+
+  # Try to switch to the target lane's last window.
+  local target_wid=$(tmux show-option -qv "@lane_${target}_window")
+
+  if [[ -n "$target_wid" ]] && window_exists "$target_wid"; then
+    tmux select-window -t "$target_wid"
+  else
+    # No window in this lane yet — create one.
+    tmux new-window -c "#{pane_current_path}"
+    local new_wid=$(tmux display-message -p '#{window_id}')
+    tmux set-option -w @lane "$target"
+    tmux set-option "@lane_${target}_window" "$new_wid"
+  fi
+  exit 0
+fi
+
+
+if [[ "$1" == "lane-next-window" ]]; then
+  ensure_lanes
+  local current_lane=$(tmux show-option -qv @current_lane)
+  local current_wid=$(tmux display-message -p '#{window_id}')
+
+  # Get all window IDs in this lane, ordered by index.
+  local lane_windows=()
+  while IFS= read -r line; do
+    local wid=${line%%:*}
+    local wlane=${line#*:}
+    if [[ "$wlane" == "$current_lane" ]]; then
+      lane_windows+=("$wid")
+    fi
+  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
+
+  if [[ ${#lane_windows[@]} -le 1 ]]; then
+    exit 0
+  fi
+
+  # Find current position and go to next.
+  local idx=0
+  for ((i = 1; i <= ${#lane_windows[@]}; i++)); do
+    if [[ "${lane_windows[$i]}" == "$current_wid" ]]; then
+      idx=$i
+      break
+    fi
+  done
+
+  local next_idx=$(( idx % ${#lane_windows[@]} + 1 ))
+  local next_wid="${lane_windows[$next_idx]}"
+  tmux select-window -t "$next_wid"
+  tmux set-option "@lane_${current_lane}_window" "$next_wid"
+  exit 0
+fi
+
+
+if [[ "$1" == "lane-prev-window" ]]; then
+  ensure_lanes
+  local current_lane=$(tmux show-option -qv @current_lane)
+  local current_wid=$(tmux display-message -p '#{window_id}')
+
+  local lane_windows=()
+  while IFS= read -r line; do
+    local wid=${line%%:*}
+    local wlane=${line#*:}
+    if [[ "$wlane" == "$current_lane" ]]; then
+      lane_windows+=("$wid")
+    fi
+  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
+
+  if [[ ${#lane_windows[@]} -le 1 ]]; then
+    exit 0
+  fi
+
+  local idx=0
+  for ((i = 1; i <= ${#lane_windows[@]}; i++)); do
+    if [[ "${lane_windows[$i]}" == "$current_wid" ]]; then
+      idx=$i
+      break
+    fi
+  done
+
+  local prev_idx=$(( (idx - 2 + ${#lane_windows[@]}) % ${#lane_windows[@]} + 1 ))
+  local prev_wid="${lane_windows[$prev_idx]}"
+  tmux select-window -t "$prev_wid"
+  tmux set-option "@lane_${current_lane}_window" "$prev_wid"
+  exit 0
+fi
+
+
+if [[ "$1" == "lane-new-window" ]]; then
+  ensure_lanes
+  local current_lane=$(tmux show-option -qv @current_lane)
+  tmux new-window -c "#{pane_current_path}"
+  local new_wid=$(tmux display-message -p '#{window_id}')
+  tmux set-option -w @lane "$current_lane"
+  tmux set-option "@lane_${current_lane}_window" "$new_wid"
+  exit 0
+fi
+
+
+if [[ "$1" == "lane-kill-window" ]]; then
+  ensure_lanes
+  local current_lane=$(tmux show-option -qv @current_lane)
+  local current_wid=$(tmux display-message -p '#{window_id}')
+
+  # Find another window in the same lane to land on after kill.
+  local fallback_wid=""
+  while IFS= read -r line; do
+    local wid=${line%%:*}
+    local wlane=${line#*:}
+    if [[ "$wlane" == "$current_lane" && "$wid" != "$current_wid" ]]; then
+      fallback_wid="$wid"
+      break
+    fi
+  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
+
+  # Use confirm-before so user can cancel.
+  if [[ -n "$fallback_wid" ]]; then
+    tmux confirm-before -p " Kill window?" \
+      "kill-window; select-window -t $fallback_wid; set-option @lane_${current_lane}_window $fallback_wid"
+  else
+    # Last window in this lane — after kill, switch to lane-j.
+    tmux confirm-before -p " Kill window? (last in lane)" \
+      "kill-window; run-shell '#{@tmux_commands} switch-lane j'"
+  fi
+  exit 0
+fi
+
+
+if [[ "$1" == "move-window-to-lane" ]]; then
+  ensure_lanes
+  tmux display-menu -T "#[align=centre fg=yellow] Move to Lane " -x C -y C \
+    "H  (lane H)" h "run-shell '#{@tmux_commands} move-window-to-lane-exec h'" \
+    "J  (lane J)" j "run-shell '#{@tmux_commands} move-window-to-lane-exec j'" \
+    "K  (lane K)" k "run-shell '#{@tmux_commands} move-window-to-lane-exec k'" \
+    "L  (lane L)" l "run-shell '#{@tmux_commands} move-window-to-lane-exec l'" \
+    ";  (lane ;)" ";" "run-shell '#{@tmux_commands} move-window-to-lane-exec semi'"
+  exit 0
+fi
+
+
+if [[ "$1" == "move-window-to-lane-exec" ]]; then
+  ensure_lanes
+  local target_lane="$2"
+  local current_wid=$(tmux display-message -p '#{window_id}')
+  tmux set-option -w @lane "$target_lane"
+  tmux display-message "Moved window to lane $target_lane"
+  exit 0
+fi
+
+
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
     "Open Supertree"              u "run-shell '$0 show-supertree'" \
     "Create New Session"          s "command-prompt -p \" New Session:\" \"new-session -A -s '%%'\"" \
     "Choose Session"              p "run-shell '$0 choose-session'" \
     "Choose Window"               t "choose-tree -wZ" \
-    "Switch to Last Session"      h "switch-client -l" \
     "Rename Session"              n "command-prompt -p \" Rename session:\" \"rename-session '%%'\"" \
     "Kill Other Session"          q "run-shell '$0 kill-session'" \
     "" \
-    "Create New Window"           w "new-window -c \"#{pane_current_path}\"" \
-    "Choose Window in Session"    c "choose-tree -wf\"##{==:##{session_name},#{session_name}}\"" \
-    "Open Window Menu"            o "run-shell '$0 show-window-menu'" \
-    "Switch to Last Window"       l "last-window" \
-    "Toggle Floating Terminal"    g "run-shell '$0 floating-terminal'" \
+    "New Window in Lane"          w "run-shell '$0 lane-new-window'" \
+    "Move Window to Lane"         m "run-shell '$0 move-window-to-lane'" \
     "Rename Window"               r "command-prompt -p \" Rename window:\" \"rename-window '%%'\"" \
-    "Kill Current Window"         e "confirm-before -p \" Kill window?\" kill-window" \
+    "Kill Current Window"         e "run-shell '$0 lane-kill-window'" \
+    "Toggle Zen Mode"             z "run-shell '$0 toggle-zen'" \
     "" \
     "Split Pane Down Middle"      \\ "split-window -h -c \"#{pane_current_path}\"" \
     "Split Pane Across Middle"    -  "split-window -v -c \"#{pane_current_path}\"" \
@@ -79,95 +277,85 @@ fi
 
 
 if [[ $1 == "floating-terminal" ]]; then
-  floating_session_name="__floating_terminals__"
-  floating_window_suffix=${2:-"J"}
-  current_session_name=$(tmux display-message -p '#{session_name}')
+  ensure_lanes
+  local suffix=${2:-"J"}
+  local suffix_lower=${suffix:l}
+  local popup_name="popup-${suffix_lower}"
+  local current_session=$(tmux display-message -p '#{session_name}')
+  local current_path=$(tmux display-message -p '#{pane_current_path}')
 
-  # If the floating terminal is already open, close it.
-  if [[ "$current_session_name" = "$floating_session_name" ]]; then
-    current_window_name=$(tmux display-message -p '#W')
-    current_window_suffix=$(echo "$current_window_name" | cut -d'-' -f2)
+  # Check if the popup window already exists in this session.
+  local popup_wid=$(tmux list-windows -F '#{window_id}:#{window_name}' \
+    | grep ":${popup_name}$" | cut -d':' -f1)
 
-    if [[ "$current_window_suffix" == "$floating_window_suffix" ]]; then
-      tmux detach-client -s "$floating_session_name"
-      exit 0
-    fi
+  # Create the popup window if it doesn't exist.
+  if [[ -z "$popup_wid" ]]; then
+    tmux new-window -d -n "$popup_name" -c "$current_path"
+    popup_wid=$(tmux list-windows -F '#{window_id}:#{window_name}' \
+      | grep ":${popup_name}$" | cut -d':' -f1)
+    tmux set-option -w -t "$popup_wid" @lane semi
   fi
 
-  current_path=$(tmux display-message -p '#{pane_current_path}')
+  # Popup dimensions.
+  local popup_height="80%"
+  local popup_width="80%"
+  local original_height=$(tmux display-message -p '#{client_height}')
+  local original_width=$(tmux display-message -p '#{client_width}')
+  local popup_height_chars=$(( original_height * 80 / 100 ))
+  local popup_width_chars=$(( original_width * 80 / 100 ))
 
-  if [[ "$current_session_name" = "$floating_session_name" ]]; then
-    # If a different floating terminal is open, get its source window ID.
-    current_window_name=$(tmux display-message -p '#W')
-    clean_window_id=$(echo "$current_window_name" | cut -d'-' -f3)
-  else
-    current_window_id=$(tmux display-message -p '#{window_id}')
-    clean_window_id=${current_window_id//[^a-zA-Z0-9_\-]/}
-  fi
-
-  floating_window_name="terminal-$floating_window_suffix-$clean_window_id"
-
-  floating_session_exists=$(tmux list-sessions -F '#{session_name}' \
-    | grep -c "^$floating_session_name$")
-
-  # Create the floating terminal session if it doesn't exist.
-  # discard_window_id=''
-  if [[ "$floating_session_exists" -eq 0 ]]; then
-    tmux new-session -d -s "$floating_session_name"
-
-    # discard_window_id=$(tmux display-message -t "$floating_session_name" -p '#{window_id}')
-  fi
-
-  # Check the floating session for the floating terminal window.
-  floating_window_exists=$(tmux list-windows \
-    -t "$floating_session_name" \
-    -F '#{window_name}' \
-    | grep -c "^${floating_window_name}$")
-
-  # Create the floating window if it doesn't exist.
-  if [[ "$floating_window_exists" -eq 0 ]]; then
-    tmux new-window -d \
-      -t "$floating_session_name" \
-      -n "$floating_window_name" \
-      -c "$current_path"
-  fi
-
-  # Get the ID of the floating window.
-  floating_window_id=$(tmux list-windows \
-    -t "$floating_session_name" \
-    -F '#{window_id}:#{window_name}' \
-    | grep ":${floating_window_name}$" | cut -d':' -f1)
-
-  if [[ ! "$floating_window_id" ]]; then
-    echo "Error: Terminal window not found."
-    exit 0
-  fi
-
-  # if [[ discard_window_id != '' ]]; then
-  #   tmux kill-window -t "$floating_session_name:$discard_window_id"
-  # fi
-
-  if [[ "$current_session_name" = "$floating_session_name" ]]; then
-    tmux detach-client -s "$floating_session_name"
-  fi
-
-  popup_height="80%"
-  popup_width="80%"
-
-  # Save the original terminal size
-  original_height=$(tmux display-message -p '#{client_height}')
-  original_width=$(tmux display-message -p '#{client_width}')
-
-  # Calculate the popup size in characters
-  popup_height_chars=$(( $original_height * 80 / 100 ))
-  popup_width_chars=$(( $original_width * 80 / 100 ))
-
-  tmux resize-window -t "$floating_window_id" -x $popup_width_chars -y $popup_height_chars
+  tmux resize-window -t "$popup_wid" -x $popup_width_chars -y $popup_height_chars
 
   tmux display-popup -h $popup_height -w $popup_width \
-    -T "#[align=right fg=yellow] Terminal $floating_window_suffix " \
-    -EE "tmux attach-session -t '$floating_session_name:$floating_window_id'"
+    -T "#[align=right fg=yellow] Terminal $suffix " \
+    -EE "tmux attach-session -t '${current_session}:${popup_wid}'"
 
+  exit 0
+fi
+
+
+if [[ "$1" == "toggle-zen" ]]; then
+  # Check if zen panes exist in the current window.
+  local zen_panes=($(tmux list-panes -F '#{pane_id}:#{@zen_pane}' \
+    | grep ':1$' | cut -d':' -f1))
+
+  if [[ ${#zen_panes[@]} -gt 0 ]]; then
+    # Exit zen: kill the zen side panes.
+    for pid in "${zen_panes[@]}"; do
+      tmux kill-pane -t "$pid"
+    done
+  else
+    # Enter zen: create side panes.
+    local total_width=$(tmux display-message -p '#{window_width}')
+    local center_width=120
+
+    if [[ $total_width -le 130 ]]; then
+      tmux display-message "Terminal too narrow for zen mode"
+      exit 0
+    fi
+
+    local side_width=$(( (total_width - center_width) / 2 ))
+    local center_pane=$(tmux display-message -p '#{pane_id}')
+
+    # Create right pane first (so center pane keeps its ID).
+    tmux split-window -h -l $side_width -t "$center_pane" \
+      'read -r -d "" 2>/dev/null || sleep infinity'
+    local right_pane=$(tmux display-message -p '#{pane_id}')
+    tmux set-option -p -t "$right_pane" @zen_pane 1
+
+    # Create left pane.
+    tmux split-window -hb -l $side_width -t "$center_pane" \
+      'read -r -d "" 2>/dev/null || sleep infinity'
+    local left_pane=$(tmux display-message -p '#{pane_id}')
+    tmux set-option -p -t "$left_pane" @zen_pane 1
+
+    # Style the side panes to look like margins.
+    tmux select-pane -t "$left_pane" -P 'bg=colour234,fg=colour234'
+    tmux select-pane -t "$right_pane" -P 'bg=colour234,fg=colour234'
+
+    # Refocus center pane.
+    tmux select-pane -t "$center_pane"
+  fi
   exit 0
 fi
 
@@ -200,27 +388,25 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Rename Session"]="command-prompt -p \" Rename session:\" \"rename-session '%%'\""
     ["Switch to Last Session"]="switch-client -l"
 
-    # Windows.
-    ["Switch Windows"]="run-shell '$0 show-window-chooser'"
-
-    # ["Choose Window in Current Session"]="choose-tree -wf\"##{==:##{session_name},#{session_name}}\""
+    # Windows / Lanes.
     ["Choose Window"]="choose-tree -wZ"
-    ["Create New Window"]="new-window -c \"#{pane_current_path}\""
+    ["Create New Window in Lane"]="run-shell '$0 lane-new-window'"
+    ["Kill Current Window"]="run-shell '$0 lane-kill-window'"
     ["Maximize Window"]="resize-window -A"
-    ["Open Window Menu"]="run-shell '$0 show-window-menu'"
-    ["Kill Current Window"]="confirm-before -p \" Kill window?\" kill-window"
+    ["Move Window to Another Lane"]="run-shell '$0 move-window-to-lane'"
     ["Rename Window"]="command-prompt -p \" Rename window:\" \"rename-window '%%'\""
-    ["Switch to Last Window"]="last-window"
 
     # Panes.
     ["Kill Current Pane"]="confirm-before -p \" Kill pane?\" kill-pane"
     ["Move Pane to New Window"]="break-pane -d"
     ["Split Pane Across Middle"]="split-window -v -c \"#{pane_current_path}\""
     ["Split Pane Down Middle"]="split-window -h -c \"#{pane_current_path}\""
+    ["Toggle Zen Mode"]="run-shell '$0 toggle-zen'"
 
     # Utilities.
     ["Display Clock"]="clock-mode"
-    ["Toggle Floating Terminal"]="run-shell '$0 floating-terminal'"
+    ["Toggle Floating Terminal J"]="run-shell '$0 floating-terminal J'"
+    ["Toggle Floating Terminal K"]="run-shell '$0 floating-terminal K'"
     ["Show World Time"]="display-popup -h 10 -w 29 \
       -T '#[align=centre fg=green] World Time ' \
       -E '$0 show-world-time && read -n 1'"

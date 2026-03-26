@@ -1,0 +1,93 @@
+# Tmux Configuration
+
+## Lanes
+
+A session has five lanes: **H**, **J**, **K**, **L**, and **;** (semicolon).
+Each lane has its own ring of windows. Typical usage:
+
+| Lane | Key | Purpose |
+|------|-----|---------|
+| H | alt+h | Tests |
+| J | alt+j | Editor |
+| K | alt+k | Git |
+| L | alt+l | Claude + zen |
+| ; | alt+; | Popup terminals |
+
+When you switch to a lane, you see the window that was last focused in that lane.
+
+**Flashback**: pressing the key for the lane you're already in jumps back to your previous lane. For example, if you're in lane-K and you press alt+shift+K, you return to whichever lane you came from.
+
+**Lazy initialization**: lanes are created on first use. A new session starts in lane-J with all existing windows assigned to it. Other lanes get their first window when you switch to them.
+
+**Legacy sessions**: switching to a session that hasn't been initialized yet automatically assigns all its windows to lane-J.
+
+## Windows
+
+| Key | Action |
+|-----|--------|
+| alt+u | Next window in current lane |
+| alt+i | Previous window in current lane |
+| ctrl+n | New window in current lane |
+| ctrl+q | Kill current window (with confirmation) |
+
+Windows cycle within the current lane only. Creating a new window tags it with the current lane.
+
+## Popup Terminals
+
+| Key | Action |
+|-----|--------|
+| ctrl+j | Toggle popup terminal J |
+| ctrl+k | Toggle popup terminal K |
+
+Popup terminals appear as floating overlays (80% width/height). They live in the current session as windows named `popup-j` and `popup-k`, assigned to lane-semicolon.
+
+Because they're real windows in lane-;, you can switch to lane-semicolon (alt+;) to view them as normal full-size windows. This is useful when copy-selection is broken in popup mode.
+
+## Zen Mode
+
+| Key | Action |
+|-----|--------|
+| alt+z | Toggle zen mode |
+
+Zen mode centers the current pane at 120 columns by adding blank panes on each side. The side panes are styled to match the background, creating visual margins.
+
+- Works per-pane, not per-window or per-lane.
+- Persists if you switch away and come back.
+- Toggle again to remove the side panes.
+- Requires terminal width > 130 columns.
+
+## Moving Windows Between Lanes
+
+Available from the command palette (alt+y) as "Move Window to Another Lane", or from the menu (alt+n). Shows a picker to choose the target lane.
+
+## General Navigation
+
+| Key | Action |
+|-----|--------|
+| alt+n | Menu |
+| alt+y | Command palette |
+| alt+t | Tree view (sessions and windows) |
+| alt+p | Session chooser (fzf) |
+| alt+o | Supertree |
+
+## Other
+
+| Key | Action |
+|-----|--------|
+| ctrl+a | Secondary prefix |
+| v (copy mode) | Begin selection |
+| y (copy mode) | Copy selection |
+| esc / q (copy mode) | Exit copy mode |
+
+## State Storage
+
+Lane state is stored as tmux options:
+
+- **Session options**: `@lane_initialized`, `@current_lane`, `@prev_lane`, `@lane_h_window`, `@lane_j_window`, etc.
+- **Window options**: `@lane` (which lane a window belongs to: h, j, k, l, or semi)
+- **Pane options**: `@zen_pane` (1 on zen mode side panes)
+
+## Files
+
+- `tmux.conf` — keybindings and tmux settings
+- `bin/tmux-commands.zsh` — all lane, popup, zen, and UI logic
