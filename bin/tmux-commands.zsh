@@ -105,11 +105,6 @@ if [[ "$1" == "switch-lane" ]]; then
   tmux set-option @prev_lane "$current_lane"
   tmux set-option @current_lane "$target"
 
-  # Show lane indicator.
-  local display_lane=${target}
-  [[ "$target" == "semi" ]] && display_lane=";"
-  tmux display-message "Lane: ${display_lane:u}"
-
   # Try to switch to the target lane's last window.
   local target_wid=$(tmux show-option -qv "@lane_${target}_window")
 
