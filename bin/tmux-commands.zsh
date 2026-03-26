@@ -39,6 +39,34 @@ ensure_lanes() {
   tmux set-option @current_lane j
   tmux set-option @prev_lane j
   tmux set-option @lane_initialized 1
+
+  # Hook: auto-tag new windows with the current lane.
+  tmux set-hook -t "$(tmux display-message -p '#{session_name}')" \
+    after-new-window \
+    "run-shell '#{@tmux_commands} tag-new-window'"
+}
+
+
+# Tag a newly created window with the current lane (called by hook).
+tag_new_window() {
+  local lane=$(tmux show-option -qv @current_lane)
+  local wid=$(tmux display-message -p '#{window_id}')
+  local existing=$(tmux show-option -wqv @lane)
+  if [[ -z "$existing" ]]; then
+    tmux set-option -w @lane "${lane:-j}"
+  fi
+}
+
+
+# Adopt any untagged windows into lane-j.
+adopt_orphan_windows() {
+  while IFS= read -r line; do
+    local wid=${line%%:*}
+    local wlane=${line#*:}
+    if [[ -z "$wlane" ]]; then
+      tmux set-option -w -t "$wid" @lane j
+    fi
+  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
 }
 
 
@@ -48,8 +76,15 @@ window_exists() {
 }
 
 
+if [[ "$1" == "tag-new-window" ]]; then
+  tag_new_window
+  exit 0
+fi
+
+
 if [[ "$1" == "switch-lane" ]]; then
   ensure_lanes
+  adopt_orphan_windows
   target="$2"
   current_lane=$(tmux show-option -qv @current_lane)
   current_wid=$(tmux display-message -p '#{window_id}')
@@ -70,6 +105,11 @@ if [[ "$1" == "switch-lane" ]]; then
   tmux set-option @prev_lane "$current_lane"
   tmux set-option @current_lane "$target"
 
+  # Show lane indicator.
+  local display_lane=${target}
+  [[ "$target" == "semi" ]] && display_lane=";"
+  tmux display-message "Lane: ${display_lane:u}"
+
   # Try to switch to the target lane's last window.
   local target_wid=$(tmux show-option -qv "@lane_${target}_window")
 
@@ -88,6 +128,7 @@ fi
 
 if [[ "$1" == "lane-next-window" ]]; then
   ensure_lanes
+  adopt_orphan_windows
   local current_lane=$(tmux show-option -qv @current_lane)
   local current_wid=$(tmux display-message -p '#{window_id}')
 
@@ -124,6 +165,7 @@ fi
 
 if [[ "$1" == "lane-prev-window" ]]; then
   ensure_lanes
+  adopt_orphan_windows
   local current_lane=$(tmux show-option -qv @current_lane)
   local current_wid=$(tmux display-message -p '#{window_id}')
 
@@ -212,6 +254,16 @@ if [[ "$1" == "move-window-to-lane-exec" ]]; then
   ensure_lanes
   local target_lane="$2"
   local current_wid=$(tmux display-message -p '#{window_id}')
+  local old_lane=$(tmux show-option -wqv @lane)
+
+  # Clear the old lane's stored window if it pointed to this window.
+  if [[ -n "$old_lane" ]]; then
+    local old_stored=$(tmux show-option -qv "@lane_${old_lane}_window")
+    if [[ "$old_stored" == "$current_wid" ]]; then
+      tmux set-option -u "@lane_${old_lane}_window"
+    fi
+  fi
+
   tmux set-option -w @lane "$target_lane"
   tmux display-message "Moved window to lane $target_lane"
   exit 0

@@ -15,11 +15,13 @@ Each lane has its own ring of windows. Typical usage:
 
 When you switch to a lane, you see the window that was last focused in that lane.
 
-**Flashback**: pressing the key for the lane you're already in jumps back to your previous lane. For example, if you're in lane-K and you press alt+shift+K, you return to whichever lane you came from.
+**Flashback**: pressing the key for the lane you're already in jumps back to your previous lane. For example, if you're in lane-K and you press alt+k, you return to whichever lane you came from.
 
 **Lazy initialization**: lanes are created on first use. A new session starts in lane-J with all existing windows assigned to it. Other lanes get their first window when you switch to them.
 
 **Legacy sessions**: switching to a session that hasn't been initialized yet automatically assigns all its windows to lane-J.
+
+**Orphan protection**: windows created outside the lane system (e.g. via `prefix+c` or scripts) are automatically tagged with the current lane via a tmux hook. As a fallback, any untagged windows are adopted into lane-J when switching lanes or cycling windows.
 
 ## Windows
 
