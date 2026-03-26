@@ -44,6 +44,11 @@ ensure_lanes() {
   tmux set-hook -t "$(tmux display-message -p '#{session_name}')" \
     after-new-window \
     "run-shell '#{@tmux_commands} tag-new-window'"
+
+  # Hook: kill window if only zen panes remain after a pane exits.
+  tmux set-hook -t "$(tmux display-message -p '#{session_name}')" \
+    pane-exited \
+    "run-shell '#{@tmux_commands} zen-cleanup'"
 }
 
 
@@ -78,6 +83,25 @@ window_exists() {
 
 if [[ "$1" == "tag-new-window" ]]; then
   tag_new_window
+  exit 0
+fi
+
+
+if [[ "$1" == "zen-cleanup" ]]; then
+  # If all remaining panes in the window are zen panes, kill the window.
+  local all_zen=true
+  local pane_count=0
+  while IFS= read -r line; do
+    pane_count=$((pane_count + 1))
+    if [[ "${line#*:}" != "1" ]]; then
+      all_zen=false
+      break
+    fi
+  done < <(tmux list-panes -F '#{pane_id}:#{@zen_pane}')
+
+  if [[ "$all_zen" == true && $pane_count -gt 0 ]]; then
+    tmux kill-window
+  fi
   exit 0
 fi
 
