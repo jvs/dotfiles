@@ -421,6 +421,55 @@ if [[ "$1" == "toggle-zen" ]]; then
 fi
 
 
+if [[ "$1" == "resize-zen" ]]; then
+  if [[ -n "$2" ]]; then
+    # Called with a width argument.
+    local new_width="$2"
+
+    # Exit existing zen first.
+    local zen_panes=($(tmux list-panes -F '#{pane_id}:#{@zen_pane}' \
+      | grep ':1$' | cut -d':' -f1))
+    for pid in "${zen_panes[@]}"; do
+      tmux kill-pane -t "$pid"
+    done
+
+    # Re-enter zen with the new width.
+    local total_width=$(tmux display-message -p '#{window_width}')
+    local min_total=$(( new_width + 10 ))
+
+    if [[ $total_width -le $min_total ]]; then
+      tmux display-message "Terminal too narrow for ${new_width} columns"
+      exit 0
+    fi
+
+    local side_width=$(( (total_width - new_width) / 2 ))
+    local center_pane=$(tmux display-message -p '#{pane_id}')
+
+    tmux split-window -h -l $side_width -t "$center_pane" \
+      'read -r -d "" 2>/dev/null || sleep infinity'
+    local right_pane=$(tmux display-message -p '#{pane_id}')
+    tmux set-option -p -t "$right_pane" @zen_pane 1
+
+    tmux split-window -hb -l $side_width -t "$center_pane" \
+      'read -r -d "" 2>/dev/null || sleep infinity'
+    local left_pane=$(tmux display-message -p '#{pane_id}')
+    tmux set-option -p -t "$left_pane" @zen_pane 1
+
+    tmux select-pane -t "$left_pane" -P 'bg=colour234,fg=colour234'
+    tmux select-pane -t "$right_pane" -P 'bg=colour234,fg=colour234'
+    tmux select-pane -t "$center_pane"
+
+    tmux display-message "Zen: ${new_width} columns"
+  else
+    # No argument — show a prompt with the current width.
+    local current_width=$(tmux display-message -p '#{pane_width}')
+    tmux command-prompt -p " Zen width (current: ${current_width}):" \
+      "run-shell '#{@tmux_commands} resize-zen %%'"
+  fi
+  exit 0
+fi
+
+
 check_tmux_command_file() {
   if [[ -f "$TMP_COMMAND_FILE" ]]; then
     cmd=$(cat "$TMP_COMMAND_FILE")
@@ -463,12 +512,13 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Split Pane Across Middle"]="split-window -v -c \"#{pane_current_path}\""
     ["Split Pane Down Middle"]="split-window -h -c \"#{pane_current_path}\""
     ["Toggle Zen Mode"]="run-shell '$0 toggle-zen'"
+    ["Resize Zen Mode"]="run-shell '$0 resize-zen'"
 
     # Utilities.
     ["Display Clock"]="clock-mode"
     ["Toggle Floating Terminal J"]="run-shell '$0 floating-terminal J'"
     ["Toggle Floating Terminal K"]="run-shell '$0 floating-terminal K'"
-    ["Show World Time"]="display-popup -h 10 -w 29 \
+    ["Show World Time"]="display-popup -h 11 -w 29 \
       -T '#[align=centre fg=green] World Time ' \
       -E '$0 show-world-time && read -n 1'"
 
@@ -515,6 +565,7 @@ if [[ "$1" == "show-world-time" ]]; then
     echo "   Chicago:    $(TZ="America/Chicago" date "+%I:%M %p")"
     echo "   New York:   $(TZ="America/New_York" date "+%I:%M %p")"
     echo "   London:     $(TZ="Europe/London" date "+%I:%M %p")"
+    echo "   Poland:     $(TZ="Europe/Warsaw" date "+%I:%M %p")"
     echo "   UTC:        $(TZ="UTC" date "+%I:%M %p")"
     echo "\n     [Press any key]"
 fi
@@ -537,9 +588,14 @@ if [[ "$1" == "show-client-info" ]]; then
   echo "Terminal:  $current_terminal"
   echo "Size:      $current_size"
 
+  current_lane=$(tmux show-option -qv @current_lane)
+  current_lane_display=${current_lane:-"(none)"}
+  [[ "$current_lane" == "semi" ]] && current_lane_display=";"
+
   echo "\nSession info:"
   echo "-----------------------------------------------"
   echo "Session:   $current_session"
+  echo "Lane:      ${current_lane_display:u}"
   echo "Window:    $current_window"
   echo "Pane:      $current_pane"
   echo "Path:      $current_path"

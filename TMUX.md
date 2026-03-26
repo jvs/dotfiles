@@ -52,6 +52,7 @@ Because they're real windows in lane-;, you can switch to lane-semicolon (alt+;)
 | Key | Action |
 |-----|--------|
 | alt+z | Toggle zen mode |
+| alt+shift+Z | Resize zen mode (width prompt) |
 
 Zen mode centers the current pane at 120 columns by adding blank panes on each side. The side panes are styled to match the background, creating visual margins.
 
@@ -59,6 +60,7 @@ Zen mode centers the current pane at 120 columns by adding blank panes on each s
 - Persists if you switch away and come back.
 - Toggle again to remove the side panes.
 - Requires terminal width > 130 columns.
+- alt+shift+Z shows a prompt with the current pane width and lets you type a new width (e.g. 80 for prose, 200 for wide logs). Also available in the command palette as "Resize Zen Mode".
 
 ## Moving Windows Between Lanes
 
