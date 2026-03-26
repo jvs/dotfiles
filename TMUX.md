@@ -27,8 +27,8 @@ When you switch to a lane, you see the window that was last focused in that lane
 |-----|--------|
 | alt+u | Next window in current lane |
 | alt+i | Previous window in current lane |
-| ctrl+n | New window in current lane |
-| ctrl+q | Kill current window (with confirmation) |
+| alt+shift+N | New window in current lane |
+| alt+shift+Q | Kill current window (with confirmation) |
 
 Windows cycle within the current lane only. Creating a new window tags it with the current lane.
 
@@ -40,6 +40,8 @@ Windows cycle within the current lane only. Creating a new window tags it with t
 | ctrl+k | Toggle popup terminal K |
 
 Popup terminals appear as floating overlays (80% width/height). They live in the current session as windows named `popup-j` and `popup-k`, assigned to lane-semicolon.
+
+**Terminal J** is contextual: each time you open it, it cd's to the underlying window's working directory (if the shell is idle). **Terminal K** is persistent: it keeps its cwd across opens, useful for staying in a fixed location like a repo root or logs directory.
 
 Because they're real windows in lane-;, you can switch to lane-semicolon (alt+;) to view them as normal full-size windows. This is useful when copy-selection is broken in popup mode.
 
@@ -66,6 +68,8 @@ Available from the command palette (alt+y) as "Move Window to Another Lane", or 
 |-----|--------|
 | alt+n | Menu |
 | alt+y | Command palette |
+| alt+shift+S | Create new session |
+| alt+shift+P | Switch to last session |
 | alt+t | Tree view (sessions and windows) |
 | alt+p | Session chooser (fzf) |
 | alt+o | Supertree |

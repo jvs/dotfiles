@@ -296,6 +296,15 @@ if [[ $1 == "floating-terminal" ]]; then
     tmux set-option -w -t "$popup_wid" @lane semi
   fi
 
+  # Terminal J syncs cwd to the underlying window (if shell is idle).
+  if [[ "$suffix_lower" == "j" ]]; then
+    local popup_cmd=$(tmux display-message -t "$popup_wid" -p '#{pane_current_command}')
+    local popup_path=$(tmux display-message -t "$popup_wid" -p '#{pane_current_path}')
+    if [[ ("$popup_cmd" == "zsh" || "$popup_cmd" == "bash") && "$popup_path" != "$current_path" ]]; then
+      tmux send-keys -t "$popup_wid" " cd $(printf '%q' "$current_path")" Enter
+    fi
+  fi
+
   # Popup dimensions.
   local popup_height="80%"
   local popup_width="80%"
