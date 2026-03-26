@@ -523,13 +523,15 @@ if [[ "$1" == "show-command-palette-body" ]]; then
       -E '$0 show-world-time && read -n 1'"
 
     # tmux.
+    ["Detach All Other Clients"]="run-shell 'tmux detach-client -a'"
     ["Detach from tmux"]="detach"
     ["Enter Copy Mode"]="copy-mode"
     ["Reload tmux Configuration"]="source-file ~/.tmux.conf \; display-message \"Reloaded ~/tmux.conf\""
     ["Show Command Prompt"]="command-prompt -p ' Command:'"
     ["Show Messages"]="show-messages"
     ["Toggle Status Bar"]="set -g status"
-    ["Show Client Info"]="display-popup -E -h 18 -w 50 '$0 show-client-info && read -n 1'"
+    ["Kill Server"]="confirm-before -p ' Kill tmux server?' kill-server"
+    ["Show Client Info"]="display-popup -E -h 19 -w 50 '$0 show-client-info && read -n 1'"
   )
 
   keys=(${(k)tmux_commands})
