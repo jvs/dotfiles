@@ -11,7 +11,7 @@ Each lane has its own ring of windows. Typical usage:
 | J | alt+j | Editor |
 | K | alt+k | Git |
 | L | alt+l | Claude + zen |
-| ; | alt+; | Popup terminals |
+| ; | alt+; | Misc |
 
 When you switch to a lane, you see the window that was last focused in that lane.
 
@@ -41,11 +41,13 @@ Windows cycle within the current lane only. Creating a new window tags it with t
 | ctrl+j | Toggle popup terminal J |
 | ctrl+k | Toggle popup terminal K |
 
-Popup terminals appear as floating overlays (80% width/height). They live in the current session as windows named `popup-j` and `popup-k`, assigned to lane-semicolon.
+Popup terminals appear as floating overlays (80% width/height). They live in a separate hidden session (`__popups__`) to avoid interfering with the main session's window state. Each source session gets its own pair of popups (named `popup-{j,k}-{session}`).
 
 **Terminal J** is contextual: each time you open it, it cd's to the underlying window's working directory (if the shell is idle). **Terminal K** is persistent: it keeps its cwd across opens, useful for staying in a fixed location like a repo root or logs directory.
 
-Because they're real windows in lane-;, you can switch to lane-semicolon (alt+;) to view them as normal full-size windows. This is useful when copy-selection is broken in popup mode.
+**Switching**: pressing ctrl+k while popup J is open switches to popup K (and vice versa). Pressing the same key again closes the popup.
+
+**Cleanup**: when a session is killed, its popup windows are automatically removed via a `session-closed` hook. Additionally, idle popups (shell with no running command, idle for 3+ hours) are garbage-collected each time a popup is opened.
 
 ## Zen Mode
 

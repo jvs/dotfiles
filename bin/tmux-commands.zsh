@@ -357,45 +357,55 @@ fi
 
 
 if [[ $1 == "floating-terminal" ]]; then
-  ensure_lanes
   local suffix=${2:-"J"}
   local suffix_lower=${suffix:l}
-  local popup_name="popup-${suffix_lower}"
-  local current_window_name=$(tmux display-message -p '#W')
+  local popup_session="__popups__"
+  local current_session=$(tmux display-message -p '#{session_name}')
+  local current_path=$(tmux display-message -p '#{pane_current_path}')
 
-  # If we're already inside a popup terminal, handle toggle/switch.
-  if [[ "$current_window_name" == popup-* ]]; then
-    if [[ "$current_window_name" == "$popup_name" ]]; then
-      # Same popup — close it by detaching.
+  # If we're already inside the popup session, handle toggle/switch.
+  if [[ "$current_session" == "$popup_session" ]]; then
+    local current_window_name=$(tmux display-message -p '#W')
+    # Window names are popup-{suffix}-{source_session}.
+    if [[ "$current_window_name" == popup-${suffix_lower}-* ]]; then
+      # Same popup type — close it.
       tmux detach-client
     else
-      # Different popup — switch to the requested one.
-      local target_wid=$(tmux list-windows -F '#{window_id}:#{window_name}' \
-        | grep ":${popup_name}$" | cut -d':' -f1)
+      # Different popup type — switch. Extract source session from window name.
+      local source_session=${current_window_name#popup-?-}
+      local target_name="popup-${suffix_lower}-${source_session}"
+      local target_wid=$(tmux list-windows -t "$popup_session" \
+        -F '#{window_id}:#{window_name}' \
+        | grep ":${target_name}$" | cut -d':' -f1)
       if [[ -n "$target_wid" ]]; then
         tmux select-window -t "$target_wid"
       else
-        local current_path=$(tmux display-message -p '#{pane_current_path}')
-        tmux new-window -n "$popup_name" -c "$current_path"
-        tmux set-option -w @lane semi
+        tmux new-window -n "$target_name" -c "$current_path"
       fi
     fi
     exit 0
   fi
 
-  local current_session=$(tmux display-message -p '#{session_name}')
-  local current_path=$(tmux display-message -p '#{pane_current_path}')
+  # Garbage-collect idle popup windows while we're here.
+  $0 popup-gc &>/dev/null &
 
-  # Check if the popup window already exists in this session.
-  local popup_wid=$(tmux list-windows -F '#{window_id}:#{window_name}' \
+  local popup_name="popup-${suffix_lower}-${current_session}"
+
+  # Ensure the popup session exists.
+  if ! tmux has-session -t "$popup_session" 2>/dev/null; then
+    tmux new-session -d -s "$popup_session"
+  fi
+
+  # Find or create the popup window in the popup session.
+  local popup_wid=$(tmux list-windows -t "$popup_session" \
+    -F '#{window_id}:#{window_name}' \
     | grep ":${popup_name}$" | cut -d':' -f1)
 
-  # Create the popup window if it doesn't exist.
   if [[ -z "$popup_wid" ]]; then
-    tmux new-window -d -n "$popup_name" -c "$current_path"
-    popup_wid=$(tmux list-windows -F '#{window_id}:#{window_name}' \
+    tmux new-window -d -t "$popup_session" -n "$popup_name" -c "$current_path"
+    popup_wid=$(tmux list-windows -t "$popup_session" \
+      -F '#{window_id}:#{window_name}' \
       | grep ":${popup_name}$" | cut -d':' -f1)
-    tmux set-option -w -t "$popup_wid" @lane semi
   fi
 
   # Terminal J syncs cwd to the underlying window (if shell is idle).
@@ -419,8 +429,70 @@ if [[ $1 == "floating-terminal" ]]; then
 
   tmux display-popup -h $popup_height -w $popup_width \
     -T "#[align=right fg=yellow] Terminal $suffix " \
-    -EE "tmux attach-session -t '${current_session}:${popup_wid}'"
+    -EE "tmux attach-session -t '${popup_session}:${popup_wid}'"
 
+  exit 0
+fi
+
+
+if [[ "$1" == "popup-cleanup" ]]; then
+  # Kill all popup windows belonging to a specific session.
+  local target_session="$2"
+  local popup_session="__popups__"
+
+  if ! tmux has-session -t "$popup_session" 2>/dev/null; then
+    exit 0
+  fi
+
+  local windows_to_kill=()
+  while IFS= read -r line; do
+    local wid=${line%%:*}
+    local wname=${line#*:}
+    if [[ "$wname" == popup-*-${target_session} ]]; then
+      windows_to_kill+=("$wid")
+    fi
+  done < <(tmux list-windows -t "$popup_session" -F '#{window_id}:#{window_name}')
+
+  for wid in "${windows_to_kill[@]}"; do
+    tmux kill-window -t "$wid"
+  done
+
+  # If the popup session is now empty, kill it too.
+  local remaining=$(tmux list-windows -t "$popup_session" 2>/dev/null | wc -l)
+  if [[ "$remaining" -eq 0 ]]; then
+    tmux kill-session -t "$popup_session" 2>/dev/null
+  fi
+  exit 0
+fi
+
+
+if [[ "$1" == "popup-gc" ]]; then
+  # Kill idle popup windows (shell idle for over 3 hours).
+  local popup_session="__popups__"
+  local max_idle=10800  # 3 hours in seconds
+
+  if ! tmux has-session -t "$popup_session" 2>/dev/null; then
+    exit 0
+  fi
+
+  while IFS= read -r line; do
+    local wid=${line%%|*}
+    local rest=${line#*|}
+    local cmd=${rest%%|*}
+    local idle=${rest#*|}
+
+    # Only kill if the shell is idle (not running a command).
+    if [[ ("$cmd" == "zsh" || "$cmd" == "bash") && "$idle" -gt "$max_idle" ]]; then
+      tmux kill-window -t "$wid"
+    fi
+  done < <(tmux list-windows -t "$popup_session" \
+    -F '#{window_id}|#{pane_current_command}|#{pane_idle}')
+
+  # If the popup session is now empty, kill it too.
+  local remaining=$(tmux list-windows -t "$popup_session" 2>/dev/null | wc -l)
+  if [[ "$remaining" -eq 0 ]]; then
+    tmux kill-session -t "$popup_session" 2>/dev/null
+  fi
   exit 0
 fi
 
