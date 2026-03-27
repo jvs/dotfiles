@@ -87,7 +87,7 @@ Open with **alt+y**. An fzf-powered list of all available commands:
 
 **Panes**: Kill Current Pane, Move Pane to New Window, Split Pane Across Middle, Split Pane Down Middle, Toggle Zen Mode, Resize Zen Mode, Cycle Zen Clock.
 
-**Utilities**: Display Clock, Toggle Floating Terminal J/K, Show World Time.
+**Utilities**: Display Clock, Toggle Floating Terminal J/K, Expand/Collapse Popup, Show World Time.
 
 **tmux**: Detach All Other Clients, Detach from tmux, Enter Copy Mode, Kill Server, Reload tmux Configuration, Show Command Prompt, Show Messages, Toggle Status Bar, Show Client Info.
 
