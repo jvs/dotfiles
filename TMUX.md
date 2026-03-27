@@ -109,7 +109,7 @@ Open with **alt+y**. An fzf-powered list of all available commands:
 
 Lane state is stored as tmux options:
 
-- **Session options**: `@lane_initialized`, `@current_lane`, `@prev_lane`, `@lane_h_window`, `@lane_j_window`, etc.
+- **Session options**: `@lane_initialized`, `@prev_lane`, `@lane_h_window`, `@lane_j_window`, etc.
 - **Window options**: `@lane` (which lane a window belongs to: h, j, k, l, or semi)
 - **Pane options**: `@zen_pane` (1 on zen mode side panes)
 

@@ -21,6 +21,12 @@ TMP_COMMAND_FILE="/tmp/tmux_command_to_run"
 # Lane helpers
 # ---------------------------------------------------------------------------
 
+# Get the current lane from the active window's @lane tag.
+get_current_lane() {
+  local lane=$(tmux show-option -wqv @lane)
+  echo "${lane:-j}"
+}
+
 ensure_lanes() {
   local initialized=$(tmux show-option -qv @lane_initialized)
   if [[ "$initialized" == "1" ]]; then
@@ -36,7 +42,6 @@ ensure_lanes() {
   # Record the current window as lane-j's last window.
   local cur_wid=$(tmux display-message -p '#{window_id}')
   tmux set-option @lane_j_window "$cur_wid"
-  tmux set-option @current_lane j
   tmux set-option @prev_lane j
   tmux set-option @lane_initialized 1
 
@@ -53,11 +58,11 @@ ensure_lanes() {
 
 
 # Tag a newly created window with the current lane (called by hook).
+# The new window is already active, so we get the lane from the previous window.
 tag_new_window() {
-  local lane=$(tmux show-option -qv @current_lane)
-  local wid=$(tmux display-message -p '#{window_id}')
   local existing=$(tmux show-option -wqv @lane)
   if [[ -z "$existing" ]]; then
+    local lane=$(tmux show-option -wqv -t '{last}' @lane 2>/dev/null)
     tmux set-option -w @lane "${lane:-j}"
   fi
 }
@@ -110,7 +115,7 @@ if [[ "$1" == "switch-lane" ]]; then
   ensure_lanes
   adopt_orphan_windows
   target="$2"
-  current_lane=$(tmux show-option -qv @current_lane)
+  current_lane=$(get_current_lane)
   current_wid=$(tmux display-message -p '#{window_id}')
 
   # Save the current window for the current lane.
@@ -127,7 +132,6 @@ if [[ "$1" == "switch-lane" ]]; then
 
   # Update lane tracking.
   tmux set-option @prev_lane "$current_lane"
-  tmux set-option @current_lane "$target"
 
   # Show lane indicator.
   local display_lane=${target}
@@ -153,7 +157,7 @@ fi
 if [[ "$1" == "lane-next-window" ]]; then
   ensure_lanes
   adopt_orphan_windows
-  local current_lane=$(tmux show-option -qv @current_lane)
+  local current_lane=$(get_current_lane)
   local current_wid=$(tmux display-message -p '#{window_id}')
 
   # Get all window IDs in this lane, ordered by index.
@@ -190,7 +194,7 @@ fi
 if [[ "$1" == "lane-prev-window" ]]; then
   ensure_lanes
   adopt_orphan_windows
-  local current_lane=$(tmux show-option -qv @current_lane)
+  local current_lane=$(get_current_lane)
   local current_wid=$(tmux display-message -p '#{window_id}')
 
   local lane_windows=()
@@ -224,7 +228,7 @@ fi
 
 if [[ "$1" == "lane-new-window" ]]; then
   ensure_lanes
-  local current_lane=$(tmux show-option -qv @current_lane)
+  local current_lane=$(get_current_lane)
   tmux new-window -c "#{pane_current_path}"
   local new_wid=$(tmux display-message -p '#{window_id}')
   tmux set-option -w @lane "$current_lane"
@@ -235,7 +239,7 @@ fi
 
 if [[ "$1" == "lane-kill-window" ]]; then
   ensure_lanes
-  local current_lane=$(tmux show-option -qv @current_lane)
+  local current_lane=$(get_current_lane)
   local current_wid=$(tmux display-message -p '#{window_id}')
 
   # Find another window in the same lane to land on after kill.
@@ -613,7 +617,7 @@ if [[ "$1" == "show-client-info" ]]; then
   echo "Terminal:  $current_terminal"
   echo "Size:      $current_size"
 
-  current_lane=$(tmux show-option -qv @current_lane)
+  current_lane=$(get_current_lane)
   current_lane_display=${current_lane:-"(none)"}
   [[ "$current_lane" == "semi" ]] && current_lane_display=";"
 
