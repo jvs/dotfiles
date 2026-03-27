@@ -15,7 +15,7 @@ Each lane has its own ring of windows. Typical usage:
 
 When you switch to a lane, you see the window that was last focused in that lane.
 
-**Flashback**: pressing the key for the lane you're already in jumps back to your previous lane. For example, if you're in lane-K and you press alt+k, you return to whichever lane you came from.
+**Flashback**: alt+space jumps back to your previous lane. If you press the key for the lane you're already in (e.g. alt+k while in lane-K), it shows a confirmation message and does nothing.
 
 **Lazy initialization**: lanes are created on first use. A new session starts in lane-J with all existing windows assigned to it. Other lanes get their first window when you switch to them.
 
@@ -85,7 +85,7 @@ Open with **alt+y**. An fzf-powered list of all available commands:
 
 **Windows / Lanes**: Choose Window, Create New Window in Lane, Kill Current Window, Maximize Window, Move Window to Another Lane, Rename Window.
 
-**Panes**: Kill Current Pane, Move Pane to New Window, Split Pane Across Middle, Split Pane Down Middle, Toggle Zen Mode, Resize Zen Mode.
+**Panes**: Kill Current Pane, Move Pane to New Window, Split Pane Across Middle, Split Pane Down Middle, Toggle Zen Mode, Resize Zen Mode, Cycle Zen Clock.
 
 **Utilities**: Display Clock, Toggle Floating Terminal J/K, Show World Time.
 
@@ -97,6 +97,7 @@ Open with **alt+y**. An fzf-powered list of all available commands:
 |-----|--------|
 | alt+n | Menu |
 | alt+y | Command palette |
+| alt+space | Flashback (jump to previous lane) |
 | alt+shift+S | Create new session |
 | alt+shift+P | Switch to last session |
 | alt+t | Tree view (sessions and windows) |
@@ -116,7 +117,7 @@ Open with **alt+y**. An fzf-powered list of all available commands:
 
 Lane state is stored as tmux options:
 
-- **Session options**: `@lane_initialized`, `@prev_lane`, `@lane_h_window`, `@lane_j_window`, etc.
+- **Session options**: `@lane_initialized`, `@prev_lane`, `@lane_h_window`, `@lane_j_window`, etc., `@zen_clock` (off/local/world).
 - **Window options**: `@lane` (which lane a window belongs to: h, j, k, l, or semi)
 - **Pane options**: `@zen_pane` (1 on zen mode side panes)
 

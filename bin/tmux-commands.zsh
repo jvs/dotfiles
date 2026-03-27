@@ -162,21 +162,15 @@ if [[ "$1" == "switch-lane" ]]; then
   tmux set-option "@lane_${current_lane}_window" "$current_wid"
 
   if [[ "$target" == "$current_lane" ]]; then
-    # Flashback: swap to previous lane.
-    target=$(tmux show-option -qv @prev_lane)
-    # If prev == current (no history), do nothing.
-    if [[ "$target" == "$current_lane" ]]; then
-      exit 0
-    fi
+    # Already in this lane — just confirm.
+    local display_lane=${target}
+    [[ "$target" == "semi" ]] && display_lane=";"
+    tmux display-message "[ Lane ${display_lane:u} ]"
+    exit 0
   fi
 
   # Update lane tracking.
   tmux set-option @prev_lane "$current_lane"
-
-  # Show lane indicator.
-  local display_lane=${target}
-  [[ "$target" == "semi" ]] && display_lane=";"
-  tmux display-message "[ Lane ${display_lane:u} ]"
 
   # Try to switch to the target lane's last window.
   local target_wid=$(tmux show-option -qv "@lane_${target}_window")
@@ -189,6 +183,42 @@ if [[ "$1" == "switch-lane" ]]; then
     local new_wid=$(tmux display-message -p '#{window_id}')
     tmux set-option -w @lane "$target"
     tmux set-option "@lane_${target}_window" "$new_wid"
+  fi
+  exit 0
+fi
+
+
+if [[ "$1" == "flashback" ]]; then
+  ensure_lanes
+  local current_lane=$(get_current_lane)
+  local current_wid=$(tmux display-message -p '#{window_id}')
+  local prev_lane=$(tmux show-option -qv @prev_lane)
+
+  if [[ -z "$prev_lane" || "$prev_lane" == "$current_lane" ]]; then
+    tmux display-message "No previous lane"
+    exit 0
+  fi
+
+  # Save the current window for the current lane.
+  tmux set-option "@lane_${current_lane}_window" "$current_wid"
+
+  # Update lane tracking.
+  tmux set-option @prev_lane "$current_lane"
+
+  # Show lane indicator.
+  local display_lane=${prev_lane}
+  [[ "$prev_lane" == "semi" ]] && display_lane=";"
+  tmux display-message "[ Lane ${display_lane:u} ]"
+
+  # Switch to the previous lane's last window.
+  local target_wid=$(tmux show-option -qv "@lane_${prev_lane}_window")
+  if [[ -n "$target_wid" ]] && window_exists "$target_wid"; then
+    tmux select-window -t "$target_wid"
+  else
+    tmux new-window -c "#{pane_current_path}"
+    local new_wid=$(tmux display-message -p '#{window_id}')
+    tmux set-option -w @lane "$prev_lane"
+    tmux set-option "@lane_${prev_lane}_window" "$new_wid"
   fi
   exit 0
 fi
@@ -639,6 +669,7 @@ if [[ "$1" == "zen-clock" ]]; then
         world)
           printf '\n\n'
           printf '  %-10s %s\n' "Chicago" "$(TZ='America/Chicago' date '+%I:%M %p')"
+          printf '  %s\n' "───────────────────"
           printf '  %-10s %s\n' "New York" "$(TZ='America/New_York' date '+%I:%M %p')"
           printf '  %-10s %s\n' "London" "$(TZ='Europe/London' date '+%I:%M %p')"
           printf '  %-10s %s\n' "Poland" "$(TZ='Europe/Warsaw' date '+%I:%M %p')"
