@@ -190,6 +190,7 @@ fi
 
 if [[ "$1" == "flashback" ]]; then
   ensure_lanes
+  adopt_orphan_windows
   local current_lane=$(get_current_lane)
   local current_wid=$(tmux display-message -p '#{window_id}')
   local prev_lane=$(tmux show-option -qv @prev_lane)
