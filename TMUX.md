@@ -27,8 +27,8 @@ When you switch to a lane, you see the window that was last focused in that lane
 
 | Key | Action |
 |-----|--------|
-| alt+u | Next window in current lane |
-| alt+i | Previous window in current lane |
+| alt+shift+J | Next window in current lane |
+| alt+shift+K | Previous window in current lane |
 | alt+shift+N | New window in current lane |
 | alt+shift+Q | Kill current window (with confirmation) |
 
