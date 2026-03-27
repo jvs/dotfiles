@@ -175,3 +175,4 @@ fi
 if [ -z "$TMUX" ]; then
     tmux-commands.zsh always-attach
 fi
+export PATH="$HOME/.local/bin:$PATH"
