@@ -361,6 +361,28 @@ if [[ $1 == "floating-terminal" ]]; then
   local suffix=${2:-"J"}
   local suffix_lower=${suffix:l}
   local popup_name="popup-${suffix_lower}"
+  local current_window_name=$(tmux display-message -p '#W')
+
+  # If we're already inside a popup terminal, handle toggle/switch.
+  if [[ "$current_window_name" == popup-* ]]; then
+    if [[ "$current_window_name" == "$popup_name" ]]; then
+      # Same popup — close it by detaching.
+      tmux detach-client
+    else
+      # Different popup — switch to the requested one.
+      local target_wid=$(tmux list-windows -F '#{window_id}:#{window_name}' \
+        | grep ":${popup_name}$" | cut -d':' -f1)
+      if [[ -n "$target_wid" ]]; then
+        tmux select-window -t "$target_wid"
+      else
+        local current_path=$(tmux display-message -p '#{pane_current_path}')
+        tmux new-window -n "$popup_name" -c "$current_path"
+        tmux set-option -w @lane semi
+      fi
+    fi
+    exit 0
+  fi
+
   local current_session=$(tmux display-message -p '#{session_name}')
   local current_path=$(tmux display-message -p '#{pane_current_path}')
 
