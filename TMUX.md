@@ -67,6 +67,8 @@ Zen mode centers the current pane at 120 columns by adding blank panes on each s
 - Requires terminal width > 130 columns.
 - alt+shift+Z shows a prompt with the current pane width and lets you type a new width (e.g. 80 for prose, 200 for wide logs). Also available in the command palette as "Resize Zen Mode".
 
+**Zen clock**: the right side pane can optionally display the time. Cycle through styles via the command palette ("Cycle Zen Clock"): **off** (default) → **local** (current time) → **world** (Chicago, New York, London, Poland, UTC). The setting is per-session and persists across zen toggles.
+
 **Zen cleanup**: when the main pane of a zen window exits (e.g. via `exit`), the window is automatically killed instead of leaving orphaned side panes. This uses a `pane-exited` hook that checks if all remaining panes are zen panes.
 
 > **Known issue**: if you manually split a zen window and then exit the original pane, the cleanup will kill the entire window — including the manual split. Avoid manual splits inside zen windows.

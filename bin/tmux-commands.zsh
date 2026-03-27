@@ -14,6 +14,7 @@ if [[ -z "$TMUX" ]]; then
 fi
 
 
+SELF="${0:a}"
 TMP_COMMAND_FILE="/tmp/tmux_command_to_run"
 
 
@@ -25,6 +26,45 @@ TMP_COMMAND_FILE="/tmp/tmux_command_to_run"
 get_current_lane() {
   local lane=$(tmux show-option -wqv @lane)
   echo "${lane:-j}"
+}
+
+# Create zen side panes around the current pane at the given center width.
+create_zen_panes() {
+  local center_width=${1:-120}
+  local total_width=$(tmux display-message -p '#{window_width}')
+  local min_total=$(( center_width + 10 ))
+
+  if [[ $total_width -le $min_total ]]; then
+    tmux display-message "Terminal too narrow for ${center_width} columns"
+    return 1
+  fi
+
+  local side_width=$(( (total_width - center_width) / 2 ))
+  local center_pane=$(tmux display-message -p '#{pane_id}')
+
+  # Create right pane first (so center pane keeps its ID).
+  # Run the zen-clock script so it can display a clock when enabled.
+  tmux split-window -h -l $side_width -t "$center_pane" \
+    "$SELF zen-clock"
+  local right_pane=$(tmux display-message -p '#{pane_id}')
+  tmux set-option -p -t "$right_pane" @zen_pane 1
+
+  # Create left pane.
+  tmux split-window -hb -l $side_width -t "$center_pane" \
+    'read -r -d "" 2>/dev/null || sleep infinity'
+  local left_pane=$(tmux display-message -p '#{pane_id}')
+  tmux set-option -p -t "$left_pane" @zen_pane 1
+
+  # Style side panes. Left is invisible; right is dim for the clock.
+  tmux select-pane -t "$left_pane" -P 'bg=colour234,fg=colour234'
+  tmux select-pane -t "$right_pane" -P 'bg=colour234,fg=colour240'
+
+  # Refocus center pane.
+  tmux select-pane -t "$center_pane"
+
+  if [[ $center_width -ne 120 ]]; then
+    tmux display-message "Zen: ${center_width} columns"
+  fi
 }
 
 ensure_lanes() {
@@ -547,35 +587,7 @@ if [[ "$1" == "toggle-zen" ]]; then
     done
   else
     # Enter zen: create side panes.
-    local total_width=$(tmux display-message -p '#{window_width}')
-    local center_width=120
-
-    if [[ $total_width -le 130 ]]; then
-      tmux display-message "Terminal too narrow for zen mode"
-      exit 0
-    fi
-
-    local side_width=$(( (total_width - center_width) / 2 ))
-    local center_pane=$(tmux display-message -p '#{pane_id}')
-
-    # Create right pane first (so center pane keeps its ID).
-    tmux split-window -h -l $side_width -t "$center_pane" \
-      'read -r -d "" 2>/dev/null || sleep infinity'
-    local right_pane=$(tmux display-message -p '#{pane_id}')
-    tmux set-option -p -t "$right_pane" @zen_pane 1
-
-    # Create left pane.
-    tmux split-window -hb -l $side_width -t "$center_pane" \
-      'read -r -d "" 2>/dev/null || sleep infinity'
-    local left_pane=$(tmux display-message -p '#{pane_id}')
-    tmux set-option -p -t "$left_pane" @zen_pane 1
-
-    # Style the side panes to look like margins.
-    tmux select-pane -t "$left_pane" -P 'bg=colour234,fg=colour234'
-    tmux select-pane -t "$right_pane" -P 'bg=colour234,fg=colour234'
-
-    # Refocus center pane.
-    tmux select-pane -t "$center_pane"
+    create_zen_panes 120
   fi
   exit 0
 fi
@@ -593,39 +605,61 @@ if [[ "$1" == "resize-zen" ]]; then
       tmux kill-pane -t "$pid"
     done
 
-    # Re-enter zen with the new width.
-    local total_width=$(tmux display-message -p '#{window_width}')
-    local min_total=$(( new_width + 10 ))
-
-    if [[ $total_width -le $min_total ]]; then
-      tmux display-message "Terminal too narrow for ${new_width} columns"
-      exit 0
-    fi
-
-    local side_width=$(( (total_width - new_width) / 2 ))
-    local center_pane=$(tmux display-message -p '#{pane_id}')
-
-    tmux split-window -h -l $side_width -t "$center_pane" \
-      'read -r -d "" 2>/dev/null || sleep infinity'
-    local right_pane=$(tmux display-message -p '#{pane_id}')
-    tmux set-option -p -t "$right_pane" @zen_pane 1
-
-    tmux split-window -hb -l $side_width -t "$center_pane" \
-      'read -r -d "" 2>/dev/null || sleep infinity'
-    local left_pane=$(tmux display-message -p '#{pane_id}')
-    tmux set-option -p -t "$left_pane" @zen_pane 1
-
-    tmux select-pane -t "$left_pane" -P 'bg=colour234,fg=colour234'
-    tmux select-pane -t "$right_pane" -P 'bg=colour234,fg=colour234'
-    tmux select-pane -t "$center_pane"
-
-    tmux display-message "Zen: ${new_width} columns"
+    create_zen_panes "$new_width"
   else
     # No argument — show a prompt with the current width.
     local current_width=$(tmux display-message -p '#{pane_width}')
     tmux command-prompt -p " Zen width (current: ${current_width}):" \
       "run-shell '#{@tmux_commands} resize-zen %%'"
   fi
+  exit 0
+fi
+
+
+if [[ "$1" == "zen-clock" ]]; then
+  # Runs inside the right zen pane. Loops and displays the time based on
+  # the @zen_clock session option (off, local, world).
+  local last_drawn=""
+
+  while true; do
+    local style=$(tmux show-option -qv @zen_clock 2>/dev/null)
+    style=${style:-off}
+    local now=$(date +%H:%M)
+    local key="${style}:${now}"
+
+    # Only redraw when something changes.
+    if [[ "$key" != "$last_drawn" ]]; then
+      last_drawn="$key"
+      printf '\033[2J\033[H'  # Clear screen, cursor to top.
+
+      case "$style" in
+        local)
+          printf '\n\n  %s\n' "$(date '+%I:%M %p')"
+          ;;
+        world)
+          printf '\n\n'
+          printf '  %-10s %s\n' "Chicago" "$(TZ='America/Chicago' date '+%I:%M %p')"
+          printf '  %-10s %s\n' "New York" "$(TZ='America/New_York' date '+%I:%M %p')"
+          printf '  %-10s %s\n' "London" "$(TZ='Europe/London' date '+%I:%M %p')"
+          printf '  %-10s %s\n' "Poland" "$(TZ='Europe/Warsaw' date '+%I:%M %p')"
+          printf '  %-10s %s\n' "UTC" "$(TZ='UTC' date '+%I:%M %p')"
+          ;;
+      esac
+    fi
+
+    # Sleep in short intervals so style changes take effect quickly.
+    sleep 5
+  done
+fi
+
+
+if [[ "$1" == "cycle-zen-clock" ]]; then
+  local style=$(tmux show-option -qv @zen_clock 2>/dev/null)
+  case "$style" in
+    local) tmux set-option @zen_clock world;  tmux display-message "Zen clock: world" ;;
+    world) tmux set-option @zen_clock off;    tmux display-message "Zen clock: off" ;;
+    *)     tmux set-option @zen_clock local;  tmux display-message "Zen clock: local" ;;
+  esac
   exit 0
 fi
 
@@ -673,6 +707,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Split Pane Down Middle"]="split-window -h -c \"#{pane_current_path}\""
     ["Toggle Zen Mode"]="run-shell '$0 toggle-zen'"
     ["Resize Zen Mode"]="run-shell '$0 resize-zen'"
+    ["Cycle Zen Clock"]="run-shell '$0 cycle-zen-clock'"
 
     # Utilities.
     ["Display Clock"]="clock-mode"
