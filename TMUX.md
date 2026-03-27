@@ -40,12 +40,15 @@ Windows cycle within the current lane only. Creating a new window tags it with t
 |-----|--------|
 | ctrl+j | Toggle popup terminal J |
 | ctrl+k | Toggle popup terminal K |
+| alt+= | Expand popup to full-screen / collapse back |
 
 Popup terminals appear as floating overlays (80% width/height). They live in a separate hidden session (`__popups__`) to avoid interfering with the main session's window state. Each source session gets its own pair of popups (named `popup-{j,k}-{session}`).
 
 **Terminal J** is contextual: each time you open it, it cd's to the underlying window's working directory (if the shell is idle). **Terminal K** is persistent: it keeps its cwd across opens, useful for staying in a fixed location like a repo root or logs directory.
 
 **Switching**: pressing ctrl+k while popup J is open switches to popup K (and vice versa). Pressing the same key again closes the popup.
+
+**Expand**: pressing alt+= while a popup overlay is open closes the overlay and switches to the `__popups__` session, giving you the same terminal full-screen. Pressing alt+= again returns to the previous session. Also works without a popup open — it toggles to/from the popup session.
 
 **Cleanup**: when a session is killed, its popup windows are automatically removed via a `session-closed` hook. Additionally, idle popups (shell with no running command, idle for 3+ hours) are garbage-collected each time a popup is opened.
 

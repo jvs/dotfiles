@@ -431,6 +431,44 @@ if [[ $1 == "floating-terminal" ]]; then
     -T "#[align=right fg=yellow] Terminal $suffix " \
     -EE "tmux attach-session -t '${popup_session}:${popup_wid}'"
 
+  # If the popup signaled "expand", switch to the popup session full-screen.
+  local expand=$(tmux show-option -qv -t "$popup_session" @popup_expand 2>/dev/null)
+  if [[ "$expand" == "1" ]]; then
+    tmux set-option -t "$popup_session" -u @popup_expand
+    tmux switch-client -t "$popup_session"
+  fi
+
+  exit 0
+fi
+
+
+if [[ "$1" == "expand-popup" ]]; then
+  local popup_session="__popups__"
+  local current_session=$(tmux display-message -p '#{session_name}')
+
+  if [[ "$current_session" == "$popup_session" ]]; then
+    # We're in the popup session. Could be inside a popup overlay or full-screen.
+    # Either way, check if we're in an overlay (inner client) by looking at
+    # whether the outer client is blocking on display-popup. The simplest
+    # signal: set the expand flag and detach. If we're already full-screen
+    # (not in an overlay), detach would close our connection, so instead
+    # just switch back.
+    #
+    # Heuristic: if there are multiple clients on the popup session, we're
+    # likely in an overlay (the outer display-popup holds one client).
+    local client_count=$(tmux list-clients -t "$popup_session" 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$client_count" -gt 1 ]]; then
+      # Inside a popup overlay — signal expand and detach.
+      tmux set-option -t "$popup_session" @popup_expand 1
+      tmux detach-client
+    else
+      # Full-screen in the popup session — go back to previous session.
+      tmux switch-client -l
+    fi
+  elif tmux has-session -t "$popup_session" 2>/dev/null; then
+    # Normal session, no popup open — switch to popup session directly.
+    tmux switch-client -t "$popup_session"
+  fi
   exit 0
 fi
 
@@ -640,6 +678,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Display Clock"]="clock-mode"
     ["Toggle Floating Terminal J"]="run-shell '$0 floating-terminal J'"
     ["Toggle Floating Terminal K"]="run-shell '$0 floating-terminal K'"
+    ["Expand/Collapse Popup"]="run-shell '$0 expand-popup'"
     ["Show World Time"]="display-popup -h 11 -w 29 \
       -T '#[align=centre fg=green] World Time ' \
       -E '$0 show-world-time && read -n 1'"
