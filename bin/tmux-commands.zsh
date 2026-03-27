@@ -407,19 +407,6 @@ if [[ $1 == "floating-terminal" ]]; then
     fi
   fi
 
-  # Suspend zen mode before opening the popup — the second client
-  # created by attach-session can resize the zen window and corrupt
-  # the side pane layout or trigger zen-cleanup in the wrong context.
-  local had_zen=false
-  local zen_panes=($(tmux list-panes -F '#{pane_id}:#{@zen_pane}' \
-    | grep ':1$' | cut -d':' -f1))
-  if [[ ${#zen_panes[@]} -gt 0 ]]; then
-    had_zen=true
-    for pid in "${zen_panes[@]}"; do
-      tmux kill-pane -t "$pid"
-    done
-  fi
-
   # Popup dimensions.
   local popup_height="80%"
   local popup_width="80%"
@@ -433,11 +420,6 @@ if [[ $1 == "floating-terminal" ]]; then
   tmux display-popup -h $popup_height -w $popup_width \
     -T "#[align=right fg=yellow] Terminal $suffix " \
     -EE "tmux attach-session -t '${current_session}:${popup_wid}'"
-
-  # Restore zen mode if it was active before the popup.
-  if [[ "$had_zen" == true ]]; then
-    $0 toggle-zen
-  fi
 
   exit 0
 fi
