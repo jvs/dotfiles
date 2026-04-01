@@ -15,7 +15,7 @@ Each lane has its own ring of windows. Typical usage:
 
 When you switch to a lane, you see the window that was last focused in that lane.
 
-**Flashback**: alt+space jumps back to your previous lane. If you press the key for the lane you're already in (e.g. alt+k while in lane-K), it shows a confirmation message and does nothing.
+**Flashback**: alt+space jumps back to your previous lane. If you press the key for the lane you're already in (e.g. alt+k while in lane-K), it cycles forward through that lane's windows. alt+shift+{lane key} cycles backward. If there is only one window in the lane, either key shows a confirmation message instead.
 
 **Lazy initialization**: lanes are created on first use. A new session starts in lane-J with all existing windows assigned to it. Other lanes get their first window when you switch to them.
 
@@ -27,8 +27,8 @@ When you switch to a lane, you see the window that was last focused in that lane
 
 | Key | Action |
 |-----|--------|
-| alt+shift+J | Next window in current lane |
-| alt+shift+K | Previous window in current lane |
+| alt+{lane key} | Cycle forward through windows in that lane |
+| alt+shift+{lane key} | Cycle backward through windows in that lane |
 | alt+shift+N | New window in current lane |
 | alt+shift+Q | Kill current window (with confirmation) |
 

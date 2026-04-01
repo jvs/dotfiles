@@ -155,6 +155,7 @@ if [[ "$1" == "switch-lane" ]]; then
   ensure_lanes
   adopt_orphan_windows
   target="$2"
+  local reverse="${3:-}"
   current_lane=$(get_current_lane)
   current_wid=$(tmux display-message -p '#{window_id}')
 
@@ -162,10 +163,38 @@ if [[ "$1" == "switch-lane" ]]; then
   tmux set-option "@lane_${current_lane}_window" "$current_wid"
 
   if [[ "$target" == "$current_lane" ]]; then
-    # Already in this lane — just confirm.
-    local display_lane=${target}
-    [[ "$target" == "semi" ]] && display_lane=";"
-    tmux display-message "[ Lane ${display_lane:u} ]"
+    # Already in this lane — cycle windows, or show lane message if only one.
+    local lane_windows=()
+    while IFS= read -r line; do
+      local wid=${line%%:*}
+      local wlane=${line#*:}
+      if [[ "$wlane" == "$current_lane" ]]; then
+        lane_windows+=("$wid")
+      fi
+    done < <(tmux list-windows -F '#{window_id}:#{@lane}')
+
+    if [[ ${#lane_windows[@]} -le 1 ]]; then
+      local display_lane=${target}
+      [[ "$target" == "semi" ]] && display_lane=";"
+      tmux display-message "[ Lane ${display_lane:u} ]"
+    else
+      local idx=0
+      for ((i = 1; i <= ${#lane_windows[@]}; i++)); do
+        if [[ "${lane_windows[$i]}" == "$current_wid" ]]; then
+          idx=$i
+          break
+        fi
+      done
+      local target_idx
+      if [[ "$reverse" == "reverse" ]]; then
+        target_idx=$(( (idx - 2 + ${#lane_windows[@]}) % ${#lane_windows[@]} + 1 ))
+      else
+        target_idx=$(( idx % ${#lane_windows[@]} + 1 ))
+      fi
+      local target_wid="${lane_windows[$target_idx]}"
+      tmux select-window -t "$target_wid"
+      tmux set-option "@lane_${current_lane}_window" "$target_wid"
+    fi
     exit 0
   fi
 
