@@ -1155,10 +1155,10 @@ function get_max_length() {
 
 
 if [[ "$1" == "show-supertree" ]]; then
-  session_count=$(tmux list-sessions 2>/dev/null | wc -l)
-  window_count=$(tmux list-windows -a 2>/dev/null | wc -l)
+  session_count=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep -cv '^__')
+  window_count=$(tmux list-windows -a -F "#{session_name}" 2>/dev/null | grep -cv '^__')
   total_count=$((session_count + window_count))
-  total_height=$((total_count + 7))
+  total_height=$((total_count + 4))
 
   longest_session_name=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | get_max_length)
   longest_window_name=$(tmux list-windows -a -F "#{window_name}" 2>/dev/null | get_max_length)
@@ -1172,7 +1172,7 @@ if [[ "$1" == "show-supertree" ]]; then
     longest_name=24
   fi
 
-  total_width=$((longest_name + 4))
+  total_width=$((longest_name + 6))
 
   tmux display-popup -h "$total_height" -w "$total_width" \
     -b rounded \
@@ -1186,7 +1186,7 @@ fi
 if [[ "$1" == "show-supertree-body" ]]; then
 
   if [ -d "${HOME}/github/jvs/tmux-supertree" ]; then
-    cd "${HOME}/github/jvs/tmux-supertree"
+    SUPERTREE_DIR="${HOME}/github/jvs/tmux-supertree"
   else
     SCRIPT_PATH="$0"
     if [ -L "$SCRIPT_PATH" ]; then
@@ -1196,11 +1196,10 @@ if [[ "$1" == "show-supertree-body" ]]; then
     fi
 
     BIN_DIR=$(dirname "$REAL_PATH")
-
-    cd "$BIN_DIR/../runtime/tmux-supertree"
+    SUPERTREE_DIR="$BIN_DIR/../runtime/tmux-supertree"
   fi
 
-  uv run python -m tmux_supertree.main \
+  "${SUPERTREE_DIR}/supertree" \
     --command-file "$TMP_COMMAND_FILE" \
     --return-command "$0 show-supertree"
 fi

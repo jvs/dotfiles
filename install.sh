@@ -73,4 +73,11 @@ if [ ! -d "${HOME}/github/jvs/tmux-supertree" ]; then
         git clone https://github.com/jvs/tmux-supertree.git \
             "${THIS_DIR}/runtime/tmux-supertree"
     fi
+
+    if ! command -v go &>/dev/null; then
+        echo "Error: Go is not installed. Please install it from https://go.dev/dl/ then re-run this script."
+        exit 1
+    fi
+
+    make -C "${THIS_DIR}/runtime/tmux-supertree"
 fi
