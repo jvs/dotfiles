@@ -558,9 +558,11 @@ if [[ $1 == "floating-terminal" ]]; then
 
   tmux resize-window -t "$popup_wid" -x $popup_width_chars -y $popup_height_chars
 
+  tmux set-option -t "$popup_session" @popup_is_overlay 1
   tmux display-popup -h $popup_height -w $popup_width \
     -T "#[align=right fg=yellow] Terminal $suffix " \
     -EE "tmux attach-session -t '${popup_session}:${popup_wid}'"
+  tmux set-option -t "$popup_session" -u @popup_is_overlay 2>/dev/null
 
   # If the popup signaled "expand", switch to the popup session full-screen.
   local expand=$(tmux show-option -qv -t "$popup_session" @popup_expand 2>/dev/null)
@@ -578,17 +580,11 @@ if [[ "$1" == "expand-popup" ]]; then
   local current_session=$(tmux display-message -p '#{session_name}')
 
   if [[ "$current_session" == "$popup_session" ]]; then
-    # We're in the popup session. Could be inside a popup overlay or full-screen.
-    # Either way, check if we're in an overlay (inner client) by looking at
-    # whether the outer client is blocking on display-popup. The simplest
-    # signal: set the expand flag and detach. If we're already full-screen
-    # (not in an overlay), detach would close our connection, so instead
-    # just switch back.
-    #
-    # Heuristic: if there are multiple clients on the popup session, we're
-    # likely in an overlay (the outer display-popup holds one client).
-    local client_count=$(tmux list-clients -t "$popup_session" 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "$client_count" -gt 1 ]]; then
+    # We're in the popup session. Distinguish overlay vs. full-screen using
+    # @popup_is_overlay, which floating-terminal sets before display-popup
+    # and clears after it returns.
+    local is_overlay=$(tmux show-option -qv -t "$popup_session" @popup_is_overlay 2>/dev/null)
+    if [[ "$is_overlay" == "1" ]]; then
       # Inside a popup overlay — signal expand and detach.
       tmux set-option -t "$popup_session" @popup_expand 1
       tmux detach-client
