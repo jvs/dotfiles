@@ -444,16 +444,45 @@ fi
 
 
 if [[ $1 == "kill-session" ]]; then
-  tmux display-popup -h 60% -w 60% -E "\
-    tmux list-sessions -F '#{?session_attached,,#{session_name}}' \
-    | sed '/^$/d' \
-    | fzf \
-      --reverse -m \
-      --header=kill-session \
-      --info=hidden \
-      --preview 'tmux capture-pane -pt {}' \
-    | xargs -I {} tmux kill-session -t {}"
+  current_session=$(tmux display-message -p '#S')
+  tmux display-popup -h 60% -w 60% -E "$0 kill-session-body '$current_session'"
+  exit 0
+fi
 
+
+if [[ $1 == "kill-session-body" ]]; then
+  current_session="$2"
+  tmux list-sessions -F '#{session_name}' \
+  | fzf \
+    --reverse -m \
+    --header=kill-session \
+    --info=hidden \
+    --preview 'tmux capture-pane -pt {}' \
+  | while IFS= read -r session; do
+      if [[ "$session" == "$current_session" ]]; then
+        printf ' Kill current session "%s"? [y/N] ' "$current_session" >/dev/tty
+        read -r confirm </dev/tty
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+          tmux switch-client -l 2>/dev/null || tmux switch-client -n 2>/dev/null
+          tmux kill-session -t "$current_session"
+        fi
+      else
+        tmux kill-session -t "$session"
+      fi
+    done
+  exit 0
+fi
+
+
+if [[ $1 == "kill-current-session" ]]; then
+  current=$(tmux display-message -p '#S')
+  num_sessions=$(tmux list-sessions 2>/dev/null | wc -l | tr -d ' ')
+  if [[ $num_sessions -le 1 ]]; then
+    tmux display-message "No other sessions to switch to."
+    exit 0
+  fi
+  tmux confirm-before -p " Kill session '$current'?" \
+    "run-shell 'tmux switch-client -l 2>/dev/null || tmux switch-client -n; tmux kill-session -t \"$current\"'"
   exit 0
 fi
 
@@ -752,6 +781,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Open Laneboard"]="run-shell '$0 show-laneboard'"
     ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
+    ["Kill Current Session"]="run-shell '$0 kill-current-session'"
     ["Kill Other Session"]="run-shell '$0 kill-session'"
     ["Rename Session"]="command-prompt -p \" Rename session:\" \"rename-session '%%'\""
     ["Switch to Last Session"]="switch-client -l"
