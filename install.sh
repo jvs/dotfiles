@@ -60,9 +60,15 @@ ln -sf "${THIS_DIR}/zsh/zshrc" "${HOME}/.zshrc"
 ln -sf "${THIS_DIR}/zsh/p10k.zsh" "${HOME}/.p10k.zsh"
 
 
+# Create a bin directory if it doesn't exist.
+mkdir -p "${HOME}/bin/"
+
+# Install git-addp.
+ln -sf "${THIS_DIR}/bin/git-addp.zsh" "${HOME}/bin/git-addp.zsh"
+
+
 # Create links for the tmux files.
 ln -sf "${THIS_DIR}/tmux.conf" "${HOME}/.tmux.conf"
-mkdir -p "${HOME}/bin/"
 ln -sf "${THIS_DIR}/bin/tmux-commands.zsh" "${HOME}/bin/tmux-commands.zsh"
 
 
