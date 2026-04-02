@@ -6,7 +6,7 @@ set -e
 # Echo each command.
 set -v
 
-THIS_DIR="$(cd $(dirname $0) &>/dev/null && pwd && cd - &>/dev/null)"
+THIS_DIR="$(cd "$(dirname "$0")" &>/dev/null && pwd && cd - &>/dev/null)"
 
 
 # Install oh-my-zsh.
@@ -65,6 +65,9 @@ mkdir -p "${HOME}/bin/"
 
 # Install git-addp.
 ln -sf "${THIS_DIR}/bin/git-addp.zsh" "${HOME}/bin/git-addp.zsh"
+
+# Install pi-utils.
+ln -sf "${THIS_DIR}/bin/pi-utils.sh" "${HOME}/bin/pi-utils.sh"
 
 
 # Create links for the tmux files.

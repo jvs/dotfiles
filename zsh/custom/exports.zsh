@@ -16,3 +16,7 @@ alias gap='git-addp.zsh'
 alias gcp='git cherry-pick -x'
 alias glog='git log --pretty=format:"%h%x09%an%x09%ad%x09%s"'
 # alias glog='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
+
+# Alias for pi coding agent.
+alias pi="pi-utils.sh run"
+alias pi_utils="pi-utils.sh"
