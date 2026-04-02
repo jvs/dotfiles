@@ -400,7 +400,9 @@ fi
 
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
-    "Open Supertree"              u "run-shell '$0 show-supertree'" \
+    "Open Supertree"              y "run-shell '$0 show-supertree'" \
+    "Open Laneboard"              u "run-shell '$0 show-laneboard'" \
+    "" \
     "Create New Session"          s "command-prompt -p \" New Session:\" \"new-session -A -s '%%'\"" \
     "Choose Session"              p "run-shell '$0 choose-session'" \
     "Choose Window"               t "choose-tree -wZ" \
@@ -747,6 +749,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
     # Sessions.
     ["Open Supertree"]="run-shell '$0 show-supertree'"
+    ["Open Laneboard"]="run-shell '$0 show-laneboard'"
     ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
     ["Kill Other Session"]="run-shell '$0 kill-session'"
@@ -1231,4 +1234,51 @@ if [[ "$1" == "show-supertree-body" ]]; then
   "${SUPERTREE_DIR}/supertree" \
     --command-file "$TMP_COMMAND_FILE" \
     --return-command "$0 show-supertree"
+fi
+
+
+if [[ "$1" == "show-laneboard" ]]; then
+  # Toggle: if the popup is already visible, close it.
+  if [[ "$(tmux display-message -p '#{@laneboard_open}')" == "1" ]]; then
+    tmux display-popup -C
+    exit 0
+  fi
+
+  session_name=$(tmux display-message -p "#{session_name}")
+
+  # Height = 1 blank + 1 header + 1 rule + max-windows-in-any-lane + 1 blank + 1 bar + 2 border.
+  # Use awk to find the tallest lane (untagged windows count as lane-j).
+  max_per_lane=$(tmux list-windows -F "#{@lane}" 2>/dev/null | \
+    awk '{l=($0==""?"j":$0); c[l]++} END{m=1; for(k in c) if(c[k]>m) m=c[k]; print m}')
+  [[ -z "$max_per_lane" ]] && max_per_lane=1
+  total_height=$((max_per_lane + 7))
+  (( total_height < 8 )) && total_height=8
+
+  tmux set-option -g @laneboard_open 1
+  tmux display-popup -h "$total_height" -w 90 \
+    -b rounded \
+    -T "#[align=centre fg=white] $session_name " \
+    -EE "$0 show-laneboard-body"
+  tmux set-option -g @laneboard_open 0
+
+  check_tmux_command_file
+fi
+
+if [[ "$1" == "show-laneboard-body" ]]; then
+  if [ -d "${HOME}/github/jvs/tmux-laneboard" ]; then
+    LANEBOARD_DIR="${HOME}/github/jvs/tmux-laneboard"
+  else
+    SCRIPT_PATH="$0"
+    if [ -L "$SCRIPT_PATH" ]; then
+      REAL_PATH=$(readlink -f "$SCRIPT_PATH")
+    else
+      REAL_PATH="$SCRIPT_PATH"
+    fi
+    BIN_DIR=$(dirname "$REAL_PATH")
+    LANEBOARD_DIR="$BIN_DIR/../runtime/tmux-laneboard"
+  fi
+
+  "${LANEBOARD_DIR}/laneboard" \
+    --command-file "$TMP_COMMAND_FILE" \
+    --return-command "$0 show-laneboard"
 fi

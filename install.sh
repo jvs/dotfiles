@@ -81,3 +81,21 @@ if [ ! -d "${HOME}/github/jvs/tmux-supertree" ]; then
 
     make -C "${THIS_DIR}/runtime/tmux-supertree"
 fi
+
+
+# Install laneboard.
+if [ ! -d "${HOME}/github/jvs/tmux-laneboard" ]; then
+    mkdir -p "${THIS_DIR}/runtime/"
+
+    if [ ! -d "${THIS_DIR}/runtime/tmux-laneboard" ]; then
+        git clone https://github.com/jvs/tmux-laneboard.git \
+            "${THIS_DIR}/runtime/tmux-laneboard"
+    fi
+
+    if ! command -v go &>/dev/null; then
+        echo "Error: Go is not installed. Please install it from https://go.dev/dl/ then re-run this script."
+        exit 1
+    fi
+
+    make -C "${THIS_DIR}/runtime/tmux-laneboard"
+fi
