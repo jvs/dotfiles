@@ -1233,7 +1233,8 @@ if [[ "$1" == "show-supertree-body" ]]; then
 
   "${SUPERTREE_DIR}/supertree" \
     --command-file "$TMP_COMMAND_FILE" \
-    --return-command "$0 show-supertree"
+    --return-command "$0 show-supertree" \
+    --switch-command "$0 show-laneboard"
 fi
 
 
@@ -1280,5 +1281,6 @@ if [[ "$1" == "show-laneboard-body" ]]; then
 
   "${LANEBOARD_DIR}/laneboard" \
     --command-file "$TMP_COMMAND_FILE" \
-    --return-command "$0 show-laneboard"
+    --return-command "$0 show-laneboard" \
+    --switch-command "$0 show-supertree"
 fi
