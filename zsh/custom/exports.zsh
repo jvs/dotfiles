@@ -19,4 +19,4 @@ alias glog='git log --pretty=format:"%h%x09%an%x09%ad%x09%s"'
 
 # Alias for pi coding agent.
 alias pi="pi-utils.sh run"
-alias pi_utils="pi-utils.sh"
+alias pi-utils="pi-utils.sh"
