@@ -81,7 +81,7 @@ fi
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
     "Open Supertree"              y "run-shell '$0 show-supertree'" \
-    "Open Hometown"               u "run-shell 'hometown show-windows'" \
+    "Open Hometown"               u "run-shell 'tmux-hometown show-windows'" \
     "" \
     "Create New Session"          s "command-prompt -p \" New Session:\" \"new-session -A -s '%%'\"" \
     "Choose Session"              p "run-shell '$0 choose-session'" \
@@ -89,9 +89,9 @@ if [[ "$1" == "show-menu" ]]; then
     "Rename Session"              n "command-prompt -p \" Rename session:\" \"rename-session '%%'\"" \
     "Kill Other Session"          q "run-shell '$0 kill-session'" \
     "" \
-    "New Window"                  w "run-shell 'hometown new-window'" \
+    "New Window"                  w "run-shell 'tmux-hometown new-window'" \
     "Rename Window"               r "command-prompt -p \" Rename window:\" \"rename-window '%%'\"" \
-    "Kill Current Window"         e "run-shell 'hometown kill-window'" \
+    "Kill Current Window"         e "run-shell 'tmux-hometown kill-window'" \
     "Toggle Zen Mode"             z "run-shell '$0 toggle-zen'" \
     "" \
     "Split Pane Down Middle"      \\ "split-window -h -c \"#{pane_current_path}\"" \
@@ -453,7 +453,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
     # Sessions.
     ["Open Supertree"]="run-shell '$0 show-supertree'"
-    ["Open Hometown"]="run-shell 'hometown show-windows'"
+    ["Open Hometown"]="run-shell 'tmux-hometown show-windows'"
     ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
     ["Kill Current Session"]="run-shell '$0 kill-current-session'"
@@ -463,7 +463,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
 
     # Windows.
     ["Choose Window"]="choose-tree -wZ"
-    ["Kill Current Window"]="run-shell 'hometown kill-window'"
+    ["Kill Current Window"]="run-shell 'tmux-hometown kill-window'"
     ["Maximize Window"]="resize-window -A"
     ["Rename Window"]="command-prompt -p \" Rename window:\" \"rename-window '%%'\""
 
@@ -543,7 +543,7 @@ if [[ "$1" == "show-client-info" ]]; then
   echo "Terminal:  $current_terminal"
   echo "Size:      $current_size"
 
-  # TODO: Ask hometown for the current lane.
+  # TODO: Ask tmux-hometown for the current lane.
   # current_lane=$(get_current_lane)
   # current_lane_display=${current_lane:-"(none)"}
   # [[ "$current_lane" == "semi" ]] && current_lane_display=";"
@@ -637,5 +637,5 @@ if [[ "$1" == "show-supertree-body" ]]; then
   "${SUPERTREE_DIR}/supertree" \
     --command-file "$TMP_COMMAND_FILE" \
     --return-command "$0 show-supertree" \
-    --switch-command "hometown show-windows"
+    --switch-command "tmux-hometown show-windows"
 fi

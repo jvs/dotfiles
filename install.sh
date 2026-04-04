@@ -8,6 +8,9 @@ set -v
 
 THIS_DIR="$(cd "$(dirname "$0")" &>/dev/null && pwd && cd - &>/dev/null)"
 
+# Load utility functions.
+source "${THIS_DIR}/utils/install_go.sh"
+
 
 # Install oh-my-zsh.
 if [ ! -d "${HOME}/.oh-my-zsh" ]; then
@@ -84,28 +87,43 @@ if [ ! -d "${HOME}/github/jvs/tmux-supertree" ]; then
             "${THIS_DIR}/runtime/tmux-supertree"
     fi
 
-    if ! command -v go &>/dev/null; then
-        echo "Error: Go is not installed. Please install it from https://go.dev/dl/ then re-run this script."
-        exit 1
+    if ensure_go_installed; then
+        make -C "${THIS_DIR}/runtime/tmux-supertree"
+    else
+        # TODO: download pre-built binary from GitHub when Go is not available.
+        echo "Skipping tmux-supertree build (Go not available)."
     fi
-
-    make -C "${THIS_DIR}/runtime/tmux-supertree"
 fi
 
 
-# Install laneboard.
-if [ ! -d "${HOME}/github/jvs/tmux-laneboard" ]; then
-    mkdir -p "${THIS_DIR}/runtime/"
+# Install tmux-hometown.
+if ! command -v tmux-hometown &>/dev/null; then
+    if ensure_go_installed; then
+        go install github.com/jvs/tmux-hometown@latest
+    else
+        # Go is not available - try to download a pre-built binary from GitHub.
+        os="$(uname -s)"
+        arch="$(uname -m)"
 
-    if [ ! -d "${THIS_DIR}/runtime/tmux-laneboard" ]; then
-        git clone https://github.com/jvs/tmux-laneboard.git \
-            "${THIS_DIR}/runtime/tmux-laneboard"
+        case "${os}-${arch}" in
+            Darwin-arm64)   binary="tmux-hometown-darwin-arm64" ;;
+            Darwin-x86_64)  binary="tmux-hometown-darwin-amd64" ;;
+            Linux-aarch64)  binary="tmux-hometown-linux-arm64" ;;
+            Linux-x86_64)   binary="tmux-hometown-linux-amd64" ;;
+            *)
+                echo "No pre-built tmux-hometown binary available for ${os}/${arch}."
+                echo "Install Go and run: go install github.com/jvs/tmux-hometown@latest"
+                binary=""
+                ;;
+        esac
+
+        if [[ -n "$binary" ]]; then
+            mkdir -p "${HOME}/.local/bin"
+            curl -fsSL "https://github.com/jvs/tmux-hometown/releases/latest/download/${binary}" \
+                -o "${HOME}/.local/bin/tmux-hometown"
+            chmod +x "${HOME}/.local/bin/tmux-hometown"
+            echo "tmux-hometown installed to ~/.local/bin/tmux-hometown."
+            echo "Make sure ~/.local/bin is on your PATH."
+        fi
     fi
-
-    if ! command -v go &>/dev/null; then
-        echo "Error: Go is not installed. Please install it from https://go.dev/dl/ then re-run this script."
-        exit 1
-    fi
-
-    make -C "${THIS_DIR}/runtime/tmux-laneboard"
 fi
