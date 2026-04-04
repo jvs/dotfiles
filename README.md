@@ -5,10 +5,11 @@ My dotfiles repo.
 
 ## Requirements
 
-* git
-* zsh
-* fzf
 * curl
+* fzf
+* git
+* go
+* zsh
 
 
 ### Notes
