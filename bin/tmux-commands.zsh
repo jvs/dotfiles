@@ -18,16 +18,6 @@ SELF="${0:a}"
 TMP_COMMAND_FILE="/tmp/tmux_command_to_run"
 
 
-# ---------------------------------------------------------------------------
-# Lane helpers
-# ---------------------------------------------------------------------------
-
-# Get the current lane from the active window's @lane tag.
-get_current_lane() {
-  local lane=$(tmux show-option -wqv @lane)
-  echo "${lane:-j}"
-}
-
 # Create zen side panes around the current pane at the given center width.
 create_zen_panes() {
   local center_width=${1:-120}
@@ -67,69 +57,12 @@ create_zen_panes() {
   fi
 }
 
-ensure_lanes() {
-  local initialized=$(tmux show-option -qv @lane_initialized)
-  if [[ "$initialized" == "1" ]]; then
-    return 0
-  fi
-
-  # Tag every existing window with lane "j".
-  local win_ids=($(tmux list-windows -F '#{window_id}'))
-  for wid in "${win_ids[@]}"; do
-    tmux set-option -w -t "$wid" @lane j
-  done
-
-  # Record the current window as lane-j's last window.
-  local cur_wid=$(tmux display-message -p '#{window_id}')
-  tmux set-option @lane_j_window "$cur_wid"
-  tmux set-option @prev_lane j
-  tmux set-option @lane_initialized 1
-
-  # Hook: auto-tag new windows with the current lane.
-  tmux set-hook -t "$(tmux display-message -p '#{session_name}')" \
-    after-new-window \
-    "run-shell '#{@tmux_commands} tag-new-window'"
-
-  # Hook: kill window if only zen panes remain after a pane exits.
-  tmux set-hook -t "$(tmux display-message -p '#{session_name}')" \
-    pane-exited \
-    "run-shell '#{@tmux_commands} zen-cleanup'"
-}
-
-
-# Tag a newly created window with the current lane (called by hook).
-# The new window is already active, so we get the lane from the previous window.
-tag_new_window() {
-  local existing=$(tmux show-option -wqv @lane)
-  if [[ -z "$existing" ]]; then
-    local lane=$(tmux show-option -wqv -t '{last}' @lane 2>/dev/null)
-    tmux set-option -w @lane "${lane:-j}"
-  fi
-}
-
-
-# Adopt any untagged windows into lane-j.
-adopt_orphan_windows() {
-  while IFS= read -r line; do
-    local wid=${line%%:*}
-    local wlane=${line#*:}
-    if [[ -z "$wlane" ]]; then
-      tmux set-option -w -t "$wid" @lane j
-    fi
-  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
-}
 
 
 # Check if a window id still exists in the current session.
 window_exists() {
   tmux list-windows -F '#{window_id}' | grep -q "^${1}$"
 }
-
-
-if [[ "$1" == "tag-new-window" ]]; then
-  tag_new_window
-  exit 0
-fi
 
 
 if [[ "$1" == "zen-cleanup" ]]; then
@@ -151,257 +84,11 @@ if [[ "$1" == "zen-cleanup" ]]; then
 fi
 
 
-if [[ "$1" == "switch-lane" ]]; then
-  ensure_lanes
-  adopt_orphan_windows
-  target="$2"
-  local reverse="${3:-}"
-  current_lane=$(get_current_lane)
-  current_wid=$(tmux display-message -p '#{window_id}')
-
-  # Save the current window for the current lane.
-  tmux set-option "@lane_${current_lane}_window" "$current_wid"
-
-  if [[ "$target" == "$current_lane" ]]; then
-    # Already in this lane — cycle windows, or show lane message if only one.
-    local lane_windows=()
-    while IFS= read -r line; do
-      local wid=${line%%:*}
-      local wlane=${line#*:}
-      if [[ "$wlane" == "$current_lane" ]]; then
-        lane_windows+=("$wid")
-      fi
-    done < <(tmux list-windows -F '#{window_id}:#{@lane}')
-
-    if [[ ${#lane_windows[@]} -le 1 ]]; then
-      local display_lane=${target}
-      [[ "$target" == "semi" ]] && display_lane=";"
-      tmux display-message "[ Lane ${display_lane:u} ]"
-    else
-      local idx=0
-      for ((i = 1; i <= ${#lane_windows[@]}; i++)); do
-        if [[ "${lane_windows[$i]}" == "$current_wid" ]]; then
-          idx=$i
-          break
-        fi
-      done
-      local target_idx
-      if [[ "$reverse" == "reverse" ]]; then
-        target_idx=$(( (idx - 2 + ${#lane_windows[@]}) % ${#lane_windows[@]} + 1 ))
-      else
-        target_idx=$(( idx % ${#lane_windows[@]} + 1 ))
-      fi
-      local target_wid="${lane_windows[$target_idx]}"
-      tmux select-window -t "$target_wid"
-      tmux set-option "@lane_${current_lane}_window" "$target_wid"
-    fi
-    exit 0
-  fi
-
-  # Update lane tracking.
-  tmux set-option @prev_lane "$current_lane"
-
-  # Try to switch to the target lane's last window.
-  local target_wid=$(tmux show-option -qv "@lane_${target}_window")
-
-  if [[ -n "$target_wid" ]] && window_exists "$target_wid"; then
-    tmux select-window -t "$target_wid"
-  else
-    # No window in this lane yet — create one.
-    tmux new-window -c "#{pane_current_path}"
-    local new_wid=$(tmux display-message -p '#{window_id}')
-    tmux set-option -w @lane "$target"
-    tmux set-option "@lane_${target}_window" "$new_wid"
-  fi
-  exit 0
-fi
-
-
-if [[ "$1" == "flashback" ]]; then
-  ensure_lanes
-  adopt_orphan_windows
-  local current_lane=$(get_current_lane)
-  local current_wid=$(tmux display-message -p '#{window_id}')
-  local prev_lane=$(tmux show-option -qv @prev_lane)
-
-  if [[ -z "$prev_lane" || "$prev_lane" == "$current_lane" ]]; then
-    tmux display-message "No previous lane"
-    exit 0
-  fi
-
-  # Save the current window for the current lane.
-  tmux set-option "@lane_${current_lane}_window" "$current_wid"
-
-  # Update lane tracking.
-  tmux set-option @prev_lane "$current_lane"
-
-  # Show lane indicator.
-  local display_lane=${prev_lane}
-  [[ "$prev_lane" == "semi" ]] && display_lane=";"
-  tmux display-message "[ Lane ${display_lane:u} ]"
-
-  # Switch to the previous lane's last window.
-  local target_wid=$(tmux show-option -qv "@lane_${prev_lane}_window")
-  if [[ -n "$target_wid" ]] && window_exists "$target_wid"; then
-    tmux select-window -t "$target_wid"
-  else
-    tmux new-window -c "#{pane_current_path}"
-    local new_wid=$(tmux display-message -p '#{window_id}')
-    tmux set-option -w @lane "$prev_lane"
-    tmux set-option "@lane_${prev_lane}_window" "$new_wid"
-  fi
-  exit 0
-fi
-
-
-if [[ "$1" == "lane-next-window" ]]; then
-  ensure_lanes
-  adopt_orphan_windows
-  local current_lane=$(get_current_lane)
-  local current_wid=$(tmux display-message -p '#{window_id}')
-
-  # Get all window IDs in this lane, ordered by index.
-  local lane_windows=()
-  while IFS= read -r line; do
-    local wid=${line%%:*}
-    local wlane=${line#*:}
-    if [[ "$wlane" == "$current_lane" ]]; then
-      lane_windows+=("$wid")
-    fi
-  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
-
-  if [[ ${#lane_windows[@]} -le 1 ]]; then
-    exit 0
-  fi
-
-  # Find current position and go to next.
-  local idx=0
-  for ((i = 1; i <= ${#lane_windows[@]}; i++)); do
-    if [[ "${lane_windows[$i]}" == "$current_wid" ]]; then
-      idx=$i
-      break
-    fi
-  done
-
-  local next_idx=$(( idx % ${#lane_windows[@]} + 1 ))
-  local next_wid="${lane_windows[$next_idx]}"
-  tmux select-window -t "$next_wid"
-  tmux set-option "@lane_${current_lane}_window" "$next_wid"
-  exit 0
-fi
-
-
-if [[ "$1" == "lane-prev-window" ]]; then
-  ensure_lanes
-  adopt_orphan_windows
-  local current_lane=$(get_current_lane)
-  local current_wid=$(tmux display-message -p '#{window_id}')
-
-  local lane_windows=()
-  while IFS= read -r line; do
-    local wid=${line%%:*}
-    local wlane=${line#*:}
-    if [[ "$wlane" == "$current_lane" ]]; then
-      lane_windows+=("$wid")
-    fi
-  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
-
-  if [[ ${#lane_windows[@]} -le 1 ]]; then
-    exit 0
-  fi
-
-  local idx=0
-  for ((i = 1; i <= ${#lane_windows[@]}; i++)); do
-    if [[ "${lane_windows[$i]}" == "$current_wid" ]]; then
-      idx=$i
-      break
-    fi
-  done
-
-  local prev_idx=$(( (idx - 2 + ${#lane_windows[@]}) % ${#lane_windows[@]} + 1 ))
-  local prev_wid="${lane_windows[$prev_idx]}"
-  tmux select-window -t "$prev_wid"
-  tmux set-option "@lane_${current_lane}_window" "$prev_wid"
-  exit 0
-fi
-
-
-if [[ "$1" == "lane-new-window" ]]; then
-  ensure_lanes
-  local current_lane=$(get_current_lane)
-  tmux new-window -c "#{pane_current_path}"
-  local new_wid=$(tmux display-message -p '#{window_id}')
-  tmux set-option -w @lane "$current_lane"
-  tmux set-option "@lane_${current_lane}_window" "$new_wid"
-  exit 0
-fi
-
-
-if [[ "$1" == "lane-kill-window" ]]; then
-  ensure_lanes
-  local current_lane=$(get_current_lane)
-  local current_wid=$(tmux display-message -p '#{window_id}')
-
-  # Find another window in the same lane to land on after kill.
-  local fallback_wid=""
-  while IFS= read -r line; do
-    local wid=${line%%:*}
-    local wlane=${line#*:}
-    if [[ "$wlane" == "$current_lane" && "$wid" != "$current_wid" ]]; then
-      fallback_wid="$wid"
-      break
-    fi
-  done < <(tmux list-windows -F '#{window_id}:#{@lane}')
-
-  # Use confirm-before so user can cancel.
-  if [[ -n "$fallback_wid" ]]; then
-    tmux confirm-before -p " Kill window?" \
-      "kill-window; select-window -t $fallback_wid; set-option @lane_${current_lane}_window $fallback_wid"
-  else
-    # Last window in this lane — after kill, switch to lane-j.
-    tmux confirm-before -p " Kill window? (last in lane)" \
-      "kill-window; run-shell '#{@tmux_commands} switch-lane j'"
-  fi
-  exit 0
-fi
-
-
-if [[ "$1" == "move-window-to-lane" ]]; then
-  ensure_lanes
-  tmux display-menu -T "#[align=centre fg=yellow] Move to Lane " -x C -y C \
-    "H  (lane H)" h "run-shell '#{@tmux_commands} move-window-to-lane-exec h'" \
-    "J  (lane J)" j "run-shell '#{@tmux_commands} move-window-to-lane-exec j'" \
-    "K  (lane K)" k "run-shell '#{@tmux_commands} move-window-to-lane-exec k'" \
-    "L  (lane L)" l "run-shell '#{@tmux_commands} move-window-to-lane-exec l'" \
-    ";  (lane ;)" ";" "run-shell '#{@tmux_commands} move-window-to-lane-exec semi'"
-  exit 0
-fi
-
-
-if [[ "$1" == "move-window-to-lane-exec" ]]; then
-  ensure_lanes
-  local target_lane="$2"
-  local current_wid=$(tmux display-message -p '#{window_id}')
-  local old_lane=$(tmux show-option -wqv @lane)
-
-  # Clear the old lane's stored window if it pointed to this window.
-  if [[ -n "$old_lane" ]]; then
-    local old_stored=$(tmux show-option -qv "@lane_${old_lane}_window")
-    if [[ "$old_stored" == "$current_wid" ]]; then
-      tmux set-option -u "@lane_${old_lane}_window"
-    fi
-  fi
-
-  tmux set-option -w @lane "$target_lane"
-  tmux display-message "Moved window to lane $target_lane"
-  exit 0
-fi
-
 
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
     "Open Supertree"              y "run-shell '$0 show-supertree'" \
-    "Open Laneboard"              u "run-shell '$0 show-laneboard'" \
+    "Open Hometown"               u "run-shell 'hometown show-windows'" \
     "" \
     "Create New Session"          s "command-prompt -p \" New Session:\" \"new-session -A -s '%%'\"" \
     "Choose Session"              p "run-shell '$0 choose-session'" \
@@ -409,10 +96,9 @@ if [[ "$1" == "show-menu" ]]; then
     "Rename Session"              n "command-prompt -p \" Rename session:\" \"rename-session '%%'\"" \
     "Kill Other Session"          q "run-shell '$0 kill-session'" \
     "" \
-    "New Window in Lane"          w "run-shell '$0 lane-new-window'" \
-    "Move Window to Lane"         m "run-shell '$0 move-window-to-lane'" \
+    "New Window"                  w "run-shell 'hometown new-window'" \
     "Rename Window"               r "command-prompt -p \" Rename window:\" \"rename-window '%%'\"" \
-    "Kill Current Window"         e "run-shell '$0 lane-kill-window'" \
+    "Kill Current Window"         e "run-shell 'hometown kill-window'" \
     "Toggle Zen Mode"             z "run-shell '$0 toggle-zen'" \
     "" \
     "Split Pane Down Middle"      \\ "split-window -h -c \"#{pane_current_path}\"" \
@@ -774,7 +460,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
     # Sessions.
     ["Open Supertree"]="run-shell '$0 show-supertree'"
-    ["Open Laneboard"]="run-shell '$0 show-laneboard'"
+    ["Open Hometown"]="run-shell 'hometown show-windows'"
     ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
     ["Kill Current Session"]="run-shell '$0 kill-current-session'"
@@ -782,12 +468,10 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Rename Session"]="command-prompt -p \" Rename session:\" \"rename-session '%%'\""
     ["Switch to Last Session"]="switch-client -l"
 
-    # Windows / Lanes.
+    # Windows.
     ["Choose Window"]="choose-tree -wZ"
-    ["Create New Window in Lane"]="run-shell '$0 lane-new-window'"
-    ["Kill Current Window"]="run-shell '$0 lane-kill-window'"
+    ["Kill Current Window"]="run-shell 'hometown kill-window'"
     ["Maximize Window"]="resize-window -A"
-    ["Move Window to Another Lane"]="run-shell '$0 move-window-to-lane'"
     ["Rename Window"]="command-prompt -p \" Rename window:\" \"rename-window '%%'\""
 
     # Panes.
@@ -866,14 +550,15 @@ if [[ "$1" == "show-client-info" ]]; then
   echo "Terminal:  $current_terminal"
   echo "Size:      $current_size"
 
-  current_lane=$(get_current_lane)
-  current_lane_display=${current_lane:-"(none)"}
-  [[ "$current_lane" == "semi" ]] && current_lane_display=";"
+  # TODO: Ask hometown for the current lane.
+  # current_lane=$(get_current_lane)
+  # current_lane_display=${current_lane:-"(none)"}
+  # [[ "$current_lane" == "semi" ]] && current_lane_display=";"
 
   echo "\nSession info:"
   echo "-----------------------------------------------"
   echo "Session:   $current_session"
-  echo "Lane:      ${current_lane_display:u}"
+  # echo "Lane:      ${current_lane_display:u}"
   echo "Window:    $current_window"
   echo "Pane:      $current_pane"
   echo "Path:      $current_path"
@@ -959,53 +644,5 @@ if [[ "$1" == "show-supertree-body" ]]; then
   "${SUPERTREE_DIR}/supertree" \
     --command-file "$TMP_COMMAND_FILE" \
     --return-command "$0 show-supertree" \
-    --switch-command "$0 show-laneboard"
-fi
-
-
-if [[ "$1" == "show-laneboard" ]]; then
-  # Toggle: if the popup is already visible, close it.
-  if [[ "$(tmux display-message -p '#{@laneboard_open}')" == "1" ]]; then
-    tmux display-popup -C
-    exit 0
-  fi
-
-  session_name=$(tmux display-message -p "#{session_name}")
-
-  # Height = 1 blank + 1 header + 1 rule + max-windows-in-any-lane + 1 blank + 1 bar + 2 border.
-  # Use awk to find the tallest lane (untagged windows count as lane-j).
-  max_per_lane=$(tmux list-windows -F "#{@lane}" 2>/dev/null | \
-    awk '{l=($0==""?"j":$0); c[l]++} END{m=1; for(k in c) if(c[k]>m) m=c[k]; print m}')
-  [[ -z "$max_per_lane" ]] && max_per_lane=1
-  total_height=$((max_per_lane + 7))
-  (( total_height < 8 )) && total_height=8
-
-  tmux set-option -g @laneboard_open 1
-  tmux display-popup -h "$total_height" -w 90 \
-    -b rounded \
-    -T "#[align=centre fg=white] $session_name " \
-    -EE "$0 show-laneboard-body"
-  tmux set-option -g @laneboard_open 0
-
-  check_tmux_command_file
-fi
-
-if [[ "$1" == "show-laneboard-body" ]]; then
-  if [ -d "${HOME}/github/jvs/tmux-laneboard" ]; then
-    LANEBOARD_DIR="${HOME}/github/jvs/tmux-laneboard"
-  else
-    SCRIPT_PATH="$0"
-    if [ -L "$SCRIPT_PATH" ]; then
-      REAL_PATH=$(readlink -f "$SCRIPT_PATH")
-    else
-      REAL_PATH="$SCRIPT_PATH"
-    fi
-    BIN_DIR=$(dirname "$REAL_PATH")
-    LANEBOARD_DIR="$BIN_DIR/../runtime/tmux-laneboard"
-  fi
-
-  "${LANEBOARD_DIR}/laneboard" \
-    --command-file "$TMP_COMMAND_FILE" \
-    --return-command "$0 show-laneboard" \
-    --switch-command "$0 show-supertree"
+    --switch-command "hometown show-windows"
 fi
