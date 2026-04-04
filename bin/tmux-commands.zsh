@@ -58,13 +58,6 @@ create_zen_panes() {
 }
 
 
-
-# Check if a window id still exists in the current session.
-window_exists() {
-  tmux list-windows -F '#{window_id}' | grep -q "^${1}$"
-}
-
-
 if [[ "$1" == "zen-cleanup" ]]; then
   # If all remaining panes in the window are zen panes, kill the window.
   local all_zen=true
