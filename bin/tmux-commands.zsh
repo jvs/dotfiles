@@ -153,19 +153,6 @@ if [[ $1 == "kill-session-body" ]]; then
 fi
 
 
-if [[ $1 == "kill-current-session" ]]; then
-  current=$(tmux display-message -p '#S')
-  num_sessions=$(tmux list-sessions 2>/dev/null | wc -l | tr -d ' ')
-  if [[ $num_sessions -le 1 ]]; then
-    tmux display-message "No other sessions to switch to."
-    exit 0
-  fi
-  tmux confirm-before -p " Kill session '$current'?" \
-    "run-shell 'tmux switch-client -l 2>/dev/null || tmux switch-client -n; tmux kill-session -t \"$current\"'"
-  exit 0
-fi
-
-
 if [[ $1 == "floating-terminal" ]]; then
   local suffix=${2:-"J"}
   local suffix_lower=${suffix:l}
@@ -456,13 +443,14 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Open Hometown"]="run-shell 'tmux-hometown show-windows'"
     ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
-    ["Kill Current Session"]="run-shell '$0 kill-current-session'"
+    ["Kill Current Session"]="run-shell 'tmux-hometown kill-session'"
     ["Kill Other Session"]="run-shell '$0 kill-session'"
     ["Rename Session"]="command-prompt -p \" Rename session:\" \"rename-session '%%'\""
-    ["Switch to Last Session"]="switch-client -l"
+    ["Switch to Last Session"]="tmux-hometown flip-session"
 
     # Windows.
     ["Choose Window"]="choose-tree -wZ"
+    ["Create New Window"]="run-shell 'tmux-hometown new-window'"
     ["Kill Current Window"]="run-shell 'tmux-hometown kill-window'"
     ["Maximize Window"]="resize-window -A"
     ["Rename Window"]="command-prompt -p \" Rename window:\" \"rename-window '%%'\""
