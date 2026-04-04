@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
+MISE="$HOME/.local/bin/mise"
 PI_HOME="$HOME/.local/tools/pi"
 
 pi_node() {
-  "$HOME/.local/bin/mise" exec node@24 -- "$@"
+  "$MISE" exec node@24 -- "$@"
 }
 
 # Create PI_HOME (if needed) and install pi into it.
@@ -40,7 +41,7 @@ case "$1" in
     pi_install
     ;;
   setup)
-    if ! command -v mise &>/dev/null && [[ ! -x "$HOME/.local/bin/mise" ]]; then
+    if ! command -v mise &>/dev/null && [[ ! -x "$MISE" ]]; then
       curl https://mise.run | sh
     fi
     pi_install
