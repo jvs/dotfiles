@@ -438,9 +438,11 @@ fi
 
 if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
-    # Sessions.
+    # Navigators.
     ["Open Supertree"]="run-shell '$0 show-supertree'"
     ["Open Hometown"]="run-shell 'tmux-hometown show-windows'"
+
+    # Sessions.
     ["Create New Session"]="run-shell '$0 create-new-session'"
     ["Choose Session"]="run-shell '$0 choose-session'"
     ["Kill Current Session"]="run-shell 'tmux-hometown kill-session'"
@@ -465,7 +467,7 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Cycle Zen Clock"]="run-shell '$0 cycle-zen-clock'"
 
     # Utilities.
-    ["Display Clock"]="clock-mode"
+    # ["Display Clock"]="clock-mode"
     ["Toggle Floating Terminal J"]="run-shell '$0 floating-terminal J'"
     ["Toggle Floating Terminal K"]="run-shell '$0 floating-terminal K'"
     ["Expand/Collapse Popup"]="run-shell '$0 expand-popup'"
@@ -483,6 +485,12 @@ if [[ "$1" == "show-command-palette-body" ]]; then
     ["Toggle Status Bar"]="set -g status"
     ["Kill Server"]="confirm-before -p ' Kill tmux server?' kill-server"
     ["Show Client Info"]="display-popup -E -h 19 -w 50 '$0 show-client-info && read -n 1'"
+
+    # Hometown
+    ["Show Hometown History"]="run-shell 'tmux-hometown show-history'"
+    ["Show Hometown Sessions"]="run-shell 'tmux-hometown show-sessions'"
+    ["Show Hometown Grid"]="run-shell 'tmux-hometown show-grid'"
+    ["Show Hometown Internal State"]="run-shell 'tmux-hometown show-state'"
   )
 
   keys=(${(i)${(k)tmux_commands}})
@@ -575,55 +583,3 @@ function get_max_length() {
 
   echo $max
 }
-
-
-if [[ "$1" == "show-supertree" ]]; then
-  session_count=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep -cv '^__')
-  window_count=$(tmux list-windows -a -F "#{session_name}" 2>/dev/null | grep -cv '^__')
-  total_count=$((session_count + window_count))
-  total_height=$((total_count + 4))
-
-  longest_session_name=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | get_max_length)
-  longest_window_name=$(tmux list-windows -a -F "#{window_name}" 2>/dev/null | get_max_length)
-  if (( longest_session_name > longest_window_name )); then
-    longest_name=$((longest_session_name + 3))
-  else
-    longest_name=$((longest_window_name + 3))
-  fi
-
-  if (( longest_name < 24 )); then
-    longest_name=24
-  fi
-
-  total_width=$((longest_name + 6))
-
-  tmux display-popup -h "$total_height" -w "$total_width" \
-    -b rounded \
-    -T "#[align=centre fg=white] supertree " \
-    -EE "$0 show-supertree-body"
-
-  check_tmux_command_file
-fi
-
-
-if [[ "$1" == "show-supertree-body" ]]; then
-
-  if [ -d "${HOME}/github/jvs/tmux-supertree" ]; then
-    SUPERTREE_DIR="${HOME}/github/jvs/tmux-supertree"
-  else
-    SCRIPT_PATH="$0"
-    if [ -L "$SCRIPT_PATH" ]; then
-      REAL_PATH=$(readlink -f "$SCRIPT_PATH")
-    else
-      REAL_PATH="$SCRIPT_PATH"
-    fi
-
-    BIN_DIR=$(dirname "$REAL_PATH")
-    SUPERTREE_DIR="$BIN_DIR/../runtime/tmux-supertree"
-  fi
-
-  "${SUPERTREE_DIR}/supertree" \
-    --command-file "$TMP_COMMAND_FILE" \
-    --return-command "$0 show-supertree" \
-    --switch-command "tmux-hometown show-windows"
-fi
