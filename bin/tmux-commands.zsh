@@ -80,7 +80,7 @@ fi
 
 if [[ "$1" == "show-menu" ]]; then
   tmux display-menu -T "#[align=centre fg=green] tmux " -x C -y C \
-    "Open Supertree"              y "run-shell '$0 show-supertree'" \
+    "Open Treefort"               y "run-shell '$0 show-treefort'" \
     "Open Hometown"               u "run-shell 'tmux-hometown show-windows'" \
     "" \
     "Create New Session"          s "command-prompt -p \" New Session:\" \"new-session -A -s '%%'\"" \
@@ -439,7 +439,7 @@ fi
 if [[ "$1" == "show-command-palette-body" ]]; then
   declare -A tmux_commands=(
     # Navigators.
-    ["Open Supertree"]="run-shell '$0 show-supertree'"
+    ["Open Treefort"]="run-shell '$0 show-treefort'"
     ["Open Hometown"]="run-shell 'tmux-hometown show-windows'"
 
     # Sessions.

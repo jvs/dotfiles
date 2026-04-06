@@ -78,24 +78,6 @@ ln -sf "${THIS_DIR}/tmux.conf" "${HOME}/.tmux.conf"
 ln -sf "${THIS_DIR}/bin/tmux-commands.zsh" "${HOME}/bin/tmux-commands.zsh"
 
 
-# Install supertree.
-if [ ! -d "${HOME}/github/jvs/tmux-supertree" ]; then
-    mkdir -p "${THIS_DIR}/runtime/"
-
-    if [ ! -d "${THIS_DIR}/runtime/tmux-supertree" ]; then
-        git clone https://github.com/jvs/tmux-supertree.git \
-            "${THIS_DIR}/runtime/tmux-supertree"
-    fi
-
-    if ensure_go_installed; then
-        make -C "${THIS_DIR}/runtime/tmux-supertree"
-    else
-        # TODO: download pre-built binary from GitHub when Go is not available.
-        echo "Skipping tmux-supertree build (Go not available)."
-    fi
-fi
-
-
 # Install tmux-hometown.
 if ! command -v tmux-hometown &>/dev/null; then
     if ensure_go_installed; then
@@ -123,6 +105,39 @@ if ! command -v tmux-hometown &>/dev/null; then
                 -o "${HOME}/.local/bin/tmux-hometown"
             chmod +x "${HOME}/.local/bin/tmux-hometown"
             echo "tmux-hometown installed to ~/.local/bin/tmux-hometown."
+            echo "Make sure ~/.local/bin is on your PATH."
+        fi
+    fi
+fi
+
+
+# Install tmux-treefort.
+if ! command -v tmux-treefort &>/dev/null; then
+    if ensure_go_installed; then
+        go install github.com/jvs/tmux-treefort@latest
+    else
+        # Go is not available - try to download a pre-built binary from GitHub.
+        os="$(uname -s)"
+        arch="$(uname -m)"
+
+        case "${os}-${arch}" in
+            Darwin-arm64)   binary="tmux-treefort-darwin-arm64" ;;
+            Darwin-x86_64)  binary="tmux-treefort-darwin-amd64" ;;
+            Linux-aarch64)  binary="tmux-treefort-linux-arm64" ;;
+            Linux-x86_64)   binary="tmux-treefort-linux-amd64" ;;
+            *)
+                echo "No pre-built tmux-treefort binary available for ${os}/${arch}."
+                echo "Install Go and run: go install github.com/jvs/tmux-treefort@latest"
+                binary=""
+                ;;
+        esac
+
+        if [[ -n "$binary" ]]; then
+            mkdir -p "${HOME}/.local/bin"
+            curl -fsSL "https://github.com/jvs/tmux-treefort/releases/latest/download/${binary}" \
+                -o "${HOME}/.local/bin/tmux-treefort"
+            chmod +x "${HOME}/.local/bin/tmux-treefort"
+            echo "tmux-treefort installed to ~/.local/bin/tmux-treefort."
             echo "Make sure ~/.local/bin is on your PATH."
         fi
     fi
