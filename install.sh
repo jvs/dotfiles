@@ -80,13 +80,15 @@ ln -sf "${THIS_DIR}/bin/tmux-commands.zsh" "${HOME}/bin/tmux-commands.zsh"
 
 install_go_tool() {
     local name="$1"
+    local repo="${2:-$name}"
+    local install_path="${3:-github.com/jvs/${repo}@latest}"
 
     if command -v "$name" &>/dev/null; then
         return
     fi
 
     if ensure_go_installed; then
-        go install "github.com/jvs/${name}@latest"
+        go install "${install_path}"
         return
     fi
 
@@ -102,13 +104,13 @@ install_go_tool() {
         Linux-x86_64)   binary="${name}-linux-amd64" ;;
         *)
             echo "No pre-built ${name} binary available for ${os}/${arch}."
-            echo "Install Go and run: go install github.com/jvs/${name}@latest"
+            echo "Install Go and run: go install ${install_path}"
             return
             ;;
     esac
 
     mkdir -p "${HOME}/.local/bin"
-    curl -fsSL "https://github.com/jvs/${name}/releases/latest/download/${binary}" \
+    curl -fsSL "https://github.com/jvs/${repo}/releases/latest/download/${binary}" \
         -o "${HOME}/.local/bin/${name}"
     chmod +x "${HOME}/.local/bin/${name}"
     echo "${name} installed to ~/.local/bin/${name}."
@@ -117,3 +119,4 @@ install_go_tool() {
 
 install_go_tool tmux-hometown
 install_go_tool tmux-treefort
+install_go_tool kit tmux-fieldkit github.com/jvs/tmux-fieldkit/cmd/kit@latest
