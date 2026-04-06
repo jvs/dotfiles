@@ -78,67 +78,42 @@ ln -sf "${THIS_DIR}/tmux.conf" "${HOME}/.tmux.conf"
 ln -sf "${THIS_DIR}/bin/tmux-commands.zsh" "${HOME}/bin/tmux-commands.zsh"
 
 
-# Install tmux-hometown.
-if ! command -v tmux-hometown &>/dev/null; then
-    if ensure_go_installed; then
-        go install github.com/jvs/tmux-hometown@latest
-    else
-        # Go is not available - try to download a pre-built binary from GitHub.
-        os="$(uname -s)"
-        arch="$(uname -m)"
+install_go_tool() {
+    local name="$1"
 
-        case "${os}-${arch}" in
-            Darwin-arm64)   binary="tmux-hometown-darwin-arm64" ;;
-            Darwin-x86_64)  binary="tmux-hometown-darwin-amd64" ;;
-            Linux-aarch64)  binary="tmux-hometown-linux-arm64" ;;
-            Linux-x86_64)   binary="tmux-hometown-linux-amd64" ;;
-            *)
-                echo "No pre-built tmux-hometown binary available for ${os}/${arch}."
-                echo "Install Go and run: go install github.com/jvs/tmux-hometown@latest"
-                binary=""
-                ;;
-        esac
-
-        if [[ -n "$binary" ]]; then
-            mkdir -p "${HOME}/.local/bin"
-            curl -fsSL "https://github.com/jvs/tmux-hometown/releases/latest/download/${binary}" \
-                -o "${HOME}/.local/bin/tmux-hometown"
-            chmod +x "${HOME}/.local/bin/tmux-hometown"
-            echo "tmux-hometown installed to ~/.local/bin/tmux-hometown."
-            echo "Make sure ~/.local/bin is on your PATH."
-        fi
+    if command -v "$name" &>/dev/null; then
+        return
     fi
-fi
 
-
-# Install tmux-treefort.
-if ! command -v tmux-treefort &>/dev/null; then
     if ensure_go_installed; then
-        go install github.com/jvs/tmux-treefort@latest
-    else
-        # Go is not available - try to download a pre-built binary from GitHub.
-        os="$(uname -s)"
-        arch="$(uname -m)"
-
-        case "${os}-${arch}" in
-            Darwin-arm64)   binary="tmux-treefort-darwin-arm64" ;;
-            Darwin-x86_64)  binary="tmux-treefort-darwin-amd64" ;;
-            Linux-aarch64)  binary="tmux-treefort-linux-arm64" ;;
-            Linux-x86_64)   binary="tmux-treefort-linux-amd64" ;;
-            *)
-                echo "No pre-built tmux-treefort binary available for ${os}/${arch}."
-                echo "Install Go and run: go install github.com/jvs/tmux-treefort@latest"
-                binary=""
-                ;;
-        esac
-
-        if [[ -n "$binary" ]]; then
-            mkdir -p "${HOME}/.local/bin"
-            curl -fsSL "https://github.com/jvs/tmux-treefort/releases/latest/download/${binary}" \
-                -o "${HOME}/.local/bin/tmux-treefort"
-            chmod +x "${HOME}/.local/bin/tmux-treefort"
-            echo "tmux-treefort installed to ~/.local/bin/tmux-treefort."
-            echo "Make sure ~/.local/bin is on your PATH."
-        fi
+        go install "github.com/jvs/${name}@latest"
+        return
     fi
-fi
+
+    # Go is not available - try to download a pre-built binary from GitHub.
+    local os arch binary
+    os="$(uname -s)"
+    arch="$(uname -m)"
+
+    case "${os}-${arch}" in
+        Darwin-arm64)   binary="${name}-darwin-arm64" ;;
+        Darwin-x86_64)  binary="${name}-darwin-amd64" ;;
+        Linux-aarch64)  binary="${name}-linux-arm64" ;;
+        Linux-x86_64)   binary="${name}-linux-amd64" ;;
+        *)
+            echo "No pre-built ${name} binary available for ${os}/${arch}."
+            echo "Install Go and run: go install github.com/jvs/${name}@latest"
+            return
+            ;;
+    esac
+
+    mkdir -p "${HOME}/.local/bin"
+    curl -fsSL "https://github.com/jvs/${name}/releases/latest/download/${binary}" \
+        -o "${HOME}/.local/bin/${name}"
+    chmod +x "${HOME}/.local/bin/${name}"
+    echo "${name} installed to ~/.local/bin/${name}."
+    echo "Make sure ~/.local/bin is on your PATH."
+}
+
+install_go_tool tmux-hometown
+install_go_tool tmux-treefort
