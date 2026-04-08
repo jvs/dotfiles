@@ -4,7 +4,7 @@
 
 set -e
 
-git add -p
+git add -p || true
 
 # Collect untracked files not already excluded
 untracked=(${(f)"$(git ls-files --others --exclude-standard)"})
