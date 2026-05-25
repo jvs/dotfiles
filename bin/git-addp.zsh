@@ -8,7 +8,7 @@ git add -p || true
 
 # Collect untracked files not already excluded
 untracked=(${(f)"$(git ls-files --others --exclude-standard)"})
-[[ ${#untracked[@]} -eq 0 ]] && exit 0
+if [[ ${#untracked[@]} -eq 0 ]]; then exit 0; fi
 
 repo_root=$(git rev-parse --show-toplevel)
 total=${#untracked[@]}
@@ -61,15 +61,15 @@ _preview() {
   local i=0 line total_lines
   total_lines=$(wc -l < "$file" | awk '{print $1}')
   while IFS= read -r line; do
-    (( i++ ))
+    (( ++i ))
     # Truncate long lines
     if (( ${#line} > 200 )); then
       line="${line[1,200]}${reset}${dim}…"
     fi
     print "  ${dim}${line}${reset}"
-    (( i >= 10 )) && break
+    if (( i >= 10 )); then break; fi
   done < "$file"
-  (( total_lines > i )) && print "  ${dim}… $(( total_lines - i )) more line(s)${reset}"
+  if (( total_lines > i )); then print "  ${dim}… $(( total_lines - i )) more line(s)${reset}"; fi
 }
 
 _to_repo_relative() {
@@ -92,7 +92,7 @@ print ""
 
 index=0
 for file in "${untracked[@]}"; do
-  (( index++ ))
+  (( ++index ))
 
   # Header: counter + filename
   print "${bold}($index/$total) ${cyan}${file}${reset}"
