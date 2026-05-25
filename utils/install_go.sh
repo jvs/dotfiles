@@ -20,7 +20,7 @@ _install_go_linux() {
 
     local version
     version=$(curl -fsSL "https://go.dev/dl/?mode=json" \
-        | grep -o '"version":"go[^"]*"' \
+        | grep -o '"version": *"go[^"]*"' \
         | head -1 \
         | cut -d'"' -f4)
 
