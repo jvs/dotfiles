@@ -42,9 +42,18 @@ _install_go_linux() {
 }
 
 ensure_go_installed() {
-    # Nothing to do if go is already on the PATH.
+    local min_version="1.24"
+
     if command -v go &>/dev/null; then
-        return 0
+        local current
+        current=$(go version | awk '{print $3}' | sed 's/^go//')
+        if [[ "$(printf '%s\n' "$min_version" "$current" | sort -V | head -n1)" == "$min_version" ]]; then
+            return 0
+        else
+            echo "Go version $current is installed, but version $min_version or higher is required."
+            echo "Please update Go to version $min_version or later."
+            return 1
+        fi
     fi
 
     echo "Go is not installed."
