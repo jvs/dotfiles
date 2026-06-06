@@ -7,10 +7,27 @@ pi_node() {
   "$MISE" exec node@24 -- "$@"
 }
 
+# Resolve the current package name from the pi.dev API.
+# Falls back to the known package name if the API is unreachable.
+pi_package_name() {
+  local api_name
+  api_name=$(curl -sf --max-time 10 https://pi.dev/api/latest-version \
+    | pi_node node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);process.stdout.write(j.packageName||'')}catch{}})" \
+    2>/dev/null)
+  if [[ -n "$api_name" ]]; then
+    echo "$api_name"
+  else
+    echo "@earendil-works/pi-coding-agent"
+  fi
+}
+
 # Create PI_HOME (if needed) and install pi into it.
 pi_install() {
+  local pkg
+  pkg=$(pi_package_name)
+  echo "Installing $pkg ..."
   mkdir -p "$PI_HOME"
-  (cd "$PI_HOME" && pi_node npm init -y && pi_node npm install @mariozechner/pi-coding-agent)
+  (cd "$PI_HOME" && pi_node npm init -y && pi_node npm install "$pkg")
 }
 
 # Rotate backups: keep only the two most recent.
